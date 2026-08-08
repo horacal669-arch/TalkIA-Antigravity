@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkIA — Panel de Recepción</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Tenor+Sans&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#d4a843;--gold2:#f0cc70;--gold-dim:rgba(212,168,67,0.1);--border:rgba(212,168,67,0.2);--text:#f5eedc;--text-dim:rgba(245,238,220,0.45);--surface:rgba(255,255,255,0.04);--bg:#03060f;--green:#4caf7d;--red:#e05555;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Tenor Sans',sans-serif;min-height:100vh;padding:20px 16px;}
+.sky{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 120% 55% at 50% 100%,#0a1628 0%,transparent 70%);}
+.wrap{position:relative;z-index:10;max-width:1000px;margin:0 auto;}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.logo{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:1.8rem;letter-spacing:0.25em;color:var(--gold2);}
+.hotel-name{font-size:0.55rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--text-dim);margin-top:2px;}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.live-dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.live-lbl{font-size:0.55rem;letter-spacing:0.2em;color:var(--green);}
+.btn{background:var(--gold-dim);border:1px solid var(--border);border-radius:20px;color:var(--gold);font-family:'Tenor Sans',sans-serif;font-size:0.58rem;letter-spacing:0.12em;padding:6px 12px;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-block;}
+.btn:hover{background:rgba(212,168,67,0.2);}
+.btn-red{background:rgba(224,85,85,0.08);border-color:rgba(224,85,85,0.25);color:var(--red);}
+.btn-green{background:rgba(76,175,125,0.1);border-color:rgba(76,175,125,0.3);color:var(--green);}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:300;color:var(--gold2);line-height:1;}
+.kpi-lbl{font-size:0.48rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
+
+.tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:8px;flex-wrap:wrap;}
+.tab{font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;padding:6px 10px;border-radius:20px;transition:all 0.2s;}
+.tab.active{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border);}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* ROOMS */
+.rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+.room-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;}
+.room-card.pending{border-color:rgba(212,168,67,0.5);box-shadow:0 0 14px var(--gold-dim);}
+.room-card.emergency{border-color:var(--red);box-shadow:0 0 18px rgba(224,85,85,0.2);}
+.room-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.room-num{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold);}
+.room-lang{font-size:0.5rem;background:var(--gold-dim);border:1px solid var(--border);border-radius:6px;padding:2px 7px;color:var(--gold);}
+.room-del{font-size:0.6rem;color:var(--text-dim);cursor:pointer;padding:3px;}
+.room-del:hover{color:var(--red);}
+
+.req-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;max-height:170px;overflow-y:auto;}
+.req-item{display:flex;align-items:flex-start;gap:7px;padding:7px 9px;background:rgba(255,255,255,0.02);border-radius:9px;border:1px solid rgba(255,255,255,0.04);}
+.req-item.done{opacity:0.3;}
+.req-item.emerg{background:rgba(224,85,85,0.07);border-color:rgba(224,85,85,0.15);}
+.req-item.reply{background:rgba(76,175,125,0.05);border-color:rgba(76,175,125,0.12);}
+.req-icon{font-size:1rem;flex-shrink:0;}
+.req-body{flex:1;min-width:0;}
+.req-txt{font-size:0.72rem;color:var(--text-dim);line-height:1.4;word-break:break-word;}
+.req-time{font-size:0.5rem;color:var(--text-dim);margin-top:2px;}
+.req-acts{display:flex;flex-direction:column;gap:3px;flex-shrink:0;align-items:center;}
+.req-play{font-size:0.9rem;cursor:pointer;}
+.req-done{font-size:0.5rem;color:var(--green);cursor:pointer;padding:2px 5px;border:1px solid rgba(76,175,125,0.3);border-radius:5px;}
+
+/* NOTES */
+.sec-lbl{font-size:0.5rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;display:block;}
+.notes-ta{width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:8px 10px;color:var(--text);font-family:'Tenor Sans',sans-serif;font-size:0.75rem;resize:none;min-height:48px;outline:none;line-height:1.5;margin-bottom:3px;}
+.notes-ta:focus{border-color:var(--border);}
+.notes-ta::placeholder{color:rgba(245,238,220,0.15);}
+.save-note{font-size:0.52rem;color:var(--text-dim);cursor:pointer;display:inline-block;padding:2px 8px;border:1px solid var(--border);border-radius:5px;margin-bottom:8px;}
+.save-note:hover{color:var(--gold);}
+
+/* REPLY */
+.reply-ta{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Tenor Sans',sans-serif;font-size:0.82rem;line-height:1.5;resize:none;outline:none;min-height:62px;max-height:110px;overflow-y:auto;margin-bottom:6px;}
+.reply-ta:focus{border-color:var(--gold);}
+.reply-ta::placeholder{color:var(--text-dim);}
+.reply-row{display:flex;gap:6px;}
+.reply-send{background:var(--gold);border:none;border-radius:9px;padding:9px 14px;color:#03060f;font-family:'Tenor Sans',sans-serif;font-size:0.62rem;cursor:pointer;}
+.reply-mic{background:rgba(212,168,67,0.08);border:1px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--gold);font-size:0.95rem;cursor:pointer;}
+.reply-mic.rec{background:rgba(224,85,85,0.15);border-color:var(--red);color:var(--red);}
+.reply-st{font-size:0.58rem;color:var(--green);margin-top:4px;min-height:15px;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:500px){.stats-grid{grid-template-columns:1fr;}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.stat-ttl{font-size:0.5rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
+.sat-bar{height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;display:flex;margin:6px 0;}
+.sat-p{background:#4caf7d;height:100%;transition:width 0.8s;}
+.sat-n{background:#d4a843;height:100%;transition:width 0.8s;}
+.sat-neg{background:#e05555;height:100%;transition:width 0.8s;}
+.bar-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+.bar-lbl{font-size:0.65rem;color:var(--text-dim);width:75px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar-track{flex:1;background:rgba(255,255,255,0.04);border-radius:4px;height:6px;overflow:hidden;}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;transition:width 0.8s;}
+.bar-cnt{font-size:0.6rem;color:var(--gold);width:20px;text-align:right;flex-shrink:0;}
+
+/* HOURLY CHART */
+.hour-chart{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:8px;}
+.hour-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;}
+.hour-bar{width:100%;background:var(--gold-dim);border-radius:3px 3px 0 0;transition:height 0.8s;min-height:2px;border:1px solid rgba(212,168,67,0.2);}
+.hour-lbl{font-size:0.42rem;color:var(--text-dim);margin-top:3px;}
+
+/* REPORTS */
+.rpt-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+.rpt-acts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.rpt-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:rgba(255,255,255,0.02);border-radius:9px;border:1px solid rgba(255,255,255,0.04);margin-bottom:5px;}
+.rpt-name{font-size:0.7rem;color:var(--text-dim);}
+.rpt-dl{font-size:0.58rem;color:var(--gold);text-decoration:none;}
+
+.recent-item{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;background:rgba(255,255,255,0.02);border-radius:9px;border:1px solid rgba(255,255,255,0.04);margin-bottom:6px;}
+.ri-time{font-size:0.55rem;color:var(--text-dim);white-space:nowrap;}
+.ri-room{font-size:0.58rem;color:var(--gold);min-width:50px;}
+.ri-lang{font-size:0.5rem;background:var(--gold-dim);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--gold);flex-shrink:0;}
+.ri-text{font-size:0.7rem;color:var(--text-dim);line-height:1.4;}
+.no-data{text-align:center;color:var(--text-dim);font-size:0.74rem;padding:20px 0;font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(16px);background:rgba(10,18,35,0.97);border:1px solid var(--gold);border-radius:30px;padding:9px 22px;font-size:0.68rem;color:var(--gold2);opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.bell{position:fixed;top:18px;right:18px;background:var(--red);border-radius:50%;width:38px;height:38px;display:none;align-items:center;justify-content:center;font-size:1.1rem;z-index:999;cursor:pointer;}
+.bell.on{display:flex;animation:shake 0.5s ease;}
+@keyframes shake{0%,100%{transform:rotate(0);}25%{transform:rotate(-15deg);}75%{transform:rotate(15deg);}}
+.nav-bar{display:flex;justify-content:center;gap:14px;margin-top:18px;flex-wrap:wrap;}
+.nav-link{color:var(--text-dim);font-size:0.55rem;letter-spacing:0.12em;text-decoration:none;text-transform:uppercase;transition:color 0.2s;}
+.nav-link:hover{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="sky"></div>
+<div class="bell" id="bell" onclick="this.classList.remove('on')">🔔</div>
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">TalkIA</div>
+      <div class="hotel-name" id="hotelName">Panel de Recepción</div>
+    </div>
+    <div class="hdr-right">
+      <div class="live-dot"></div><span class="live-lbl">EN VIVO</span>
+      <button class="btn" onclick="loadAll()">↻</button>
+      <button class="btn btn-red" onclick="confirmReset()">🔄 Nuevo Turno</button>
+    </div>
+  </header>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-val" id="kpiHoy">—</div><div class="kpi-lbl">Hoy</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpiTotal">—</div><div class="kpi-lbl">Total</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpiHabs">—</div><div class="kpi-lbl">Habitaciones</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpiSat">—</div><div class="kpi-lbl">Satisfacción</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('rooms',this)">🏨 Habitaciones</div>
+    <div class="tab" onclick="showTab('stats',this)">📊 Estadísticas</div>
+    <div class="tab" onclick="showTab('reports',this)">📋 Reportes</div>
+    <div class="tab" onclick="showTab('recent',this)">🕐 Recientes</div>
+  </div>
+
+  <div class="panel active" id="tab-rooms">
+    <div class="rooms-grid" id="roomsGrid"><div class="no-data">Sin actividad registrada aún</div></div>
+  </div>
+
+  <div class="panel" id="tab-stats">
+    <div class="stat-card" style="margin-bottom:12px;">
+      <div class="stat-ttl">Satisfacción del Turno</div>
+      <div class="sat-bar"><div class="sat-p" id="satP" style="width:0%"></div><div class="sat-n" id="satN" style="width:0%"></div><div class="sat-neg" id="satNeg" style="width:0%"></div></div>
+      <div id="satDetail" style="font-size:0.62rem;color:var(--text-dim);margin-top:6px;text-align:center;"></div>
+    </div>
+    <div class="stats-grid" style="margin-bottom:12px;">
+      <div class="stat-card"><div class="stat-ttl">Idiomas</div><div id="langChart"><div class="no-data">Sin datos</div></div></div>
+      <div class="stat-card"><div class="stat-ttl">Tipos de Pedido</div><div id="typeChart"><div class="no-data">Sin datos</div></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-ttl">Actividad por Hora</div>
+      <div class="hour-chart" id="hourChart"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="tab-reports">
+    <div class="rpt-card">
+      <div class="stat-ttl">Gestión de Reportes</div>
+      <div class="rpt-acts">
+        <button class="btn" onclick="saveReport()">💾 Guardar Reporte</button>
+        <a class="btn btn-green" href="/api/report/excel" download="reporte.csv">📊 Descargar Excel/CSV</a>
+        <button class="btn" onclick="loadReports()">↻ Actualizar</button>
+      </div>
+      <div id="reportList"><div class="no-data">Sin reportes guardados</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="tab-recent">
+    <div id="recentList"><div class="no-data">Sin pedidos registrados</div></div>
+  </div>
+
+  <div class="nav-bar">
+    <a href="config.html" class="nav-link">⚙ Configuración</a>
+    <a href="qr_generator.html" class="nav-link">📱 QR</a>
+    <a href="index.html" class="nav-link">👁 Huésped</a>
+  </div>
+</div>
+
+<script>
+const LANG_N={"es":"Español","en":"English","pt":"Português","fr":"Français","de":"Deutsch","it":"Italiano","zh":"中文","ja":"日本語","ru":"Русский","he":"עברית","hi":"हिन्दी"};
+const TYPE_N={"coffee":"☕ Café","cleaning":"🧹 Limpieza","taxi":"🚕 Taxi","towels":"🛁 Toallas","dinner":"🍽️ Cena","wakeup":"⏰ Despertar","wifi":"📶 WiFi","general":"💬 General","emergency":"🚨 Emergencia","tips":"🗺️ Tips","weather":"🌤️ Clima","complaint":"😤 Queja","suggestion":"💡 Sugerencia","photo":"📸 Foto","staff_reply":"↩️ Staff"};
+
+let lastCount=0, activeRec=null, currentAudio=null;
+
+function showTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='reports') loadReports();
+}
+
+function toast(msg,dur=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+function bellRing(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [880,1100,1320].forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);o.frequency.value=f;
+      g.gain.setValueAtTime(0,ctx.currentTime+i*0.15);
+      g.gain.linearRampToValueAtTime(0.25,ctx.currentTime+i*0.15+0.05);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.15+0.7);
+      o.start(ctx.currentTime+i*0.15);o.stop(ctx.currentTime+i*0.15+0.8);
+    });
+  }catch(e){}
+  const b=document.getElementById('bell');
+  b.classList.add('on');
+  setTimeout(()=>b.classList.remove('on'),4000);
+}
+
+function timeAgo(ts){
+  if(!ts) return '';
+  const d=Math.floor((Date.now()/1000)-ts);
+  if(d<60) return d+'s';
+  if(d<3600) return Math.floor(d/60)+'min';
+  return Math.floor(d/3600)+'h';
+}
+
+function playAudio(url){
+  if(currentAudio){currentAudio.pause();currentAudio=null;}
+  currentAudio=new Audio(url);
+  currentAudio.play().catch(()=>toast('❌ No se pudo reproducir'));
+}
+
+function renderBars(data,nameMap,container){
+  if(!data||!Object.keys(data).length){container.innerHTML='<div class="no-data">Sin datos</div>';return;}
+  const sorted=Object.entries(data).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0][1];
+  container.innerHTML=sorted.map(([k,v])=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${nameMap[k]||k}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/max*100)}%"></div></div>
+      <div class="bar-cnt">${v}</div>
+    </div>`).join('');
+}
+
+function renderHourChart(byHour){
+  const container=document.getElementById('hourChart');
+  if(!byHour||!Object.keys(byHour).length){container.innerHTML='<div class="no-data" style="width:100%">Sin datos</div>';return;}
+  const max=Math.max(...Object.values(byHour))||1;
+  const hours=Array.from({length:24},(_,i)=>i.toString().padStart(2,'0'));
+  container.innerHTML=hours.map(h=>{
+    const v=byHour[h]||0;
+    const pct=Math.round(v/max*100);
+    return `<div class="hour-bar-wrap">
+      <div class="hour-bar" style="height:${Math.max(pct,2)}%" title="${h}:00 — ${v} pedidos"></div>
+      ${parseInt(h)%4===0?`<div class="hour-lbl">${h}</div>`:'<div class="hour-lbl"></div>'}
+    </div>`;
+  }).join('');
+}
+
+function markDone(room,idx){fetch(`/api/rooms/${room}/request/${idx}/done`,{method:'POST'}).then(()=>loadAll());}
+function resetRoom(room){if(!confirm(`¿Limpiar hab. ${room}?`))return;fetch(`/api/rooms/${room}/reset`,{method:'POST'}).then(()=>loadAll());}
+function saveNotes(room){
+  const v=document.getElementById(`n_${room}`).value;
+  fetch(`/api/rooms/${room}/notes`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:v})})
+    .then(()=>toast('✓ Nota guardada'));
+}
+
+async function sendReply(room){
+  const ta=document.getElementById(`r_${room}`);
+  const msg=ta.value.trim();
+  if(!msg){toast('Escribí algo primero');return;}
+  const st=document.getElementById(`st_${room}`);
+  st.textContent='Traduciendo...';
+  try{
+    const res=await fetch(`/api/rooms/${room}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    const d=await res.json();
+    if(d.status==='ok'){
+      ta.value='';
+      st.textContent=`✓ Enviado en ${(d.lang||'').toUpperCase()}: "${d.translated}"`;
+      toast(`✓ Enviado al huésped`);
+      if(d.audio_url) playAudio(d.audio_url);
+      setTimeout(()=>st.textContent='',6000);
+      loadAll();
+    }else{st.textContent='❌ '+d.message;}
+  }catch(e){st.textContent='❌ Error de conexión';}
+}
+
+async function toggleMic(room){
+  const btn=document.getElementById(`m_${room}`);
+  if(activeRec&&activeRec.room===room){activeRec.mr.stop();return;}
+  if(activeRec) activeRec.mr.stop();
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr=new MediaRecorder(stream);const chunks=[];
+    mr.ondataavailable=e=>chunks.push(e.data);
+    mr.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      btn.classList.remove('rec');btn.textContent='🎙️';activeRec=null;
+      const st=document.getElementById(`st_${room}`);
+      st.textContent='Transcribiendo...';
+      const blob=new Blob(chunks,{type:'audio/webm'});
+      const reader=new FileReader();reader.readAsDataURL(blob);
+      reader.onloadend=async()=>{
+        try{
+          const rd=await fetch('/api/rooms');const rj=await rd.json();
+          const gl=rj.rooms?.[room]?.lang||'en';
+          const res=await fetch(`/api/rooms/${room}/reply-audio`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({audio:reader.result.split(',')[1],guest_lang:gl})});
+          const d=await res.json();
+          if(d.status==='ok'){
+            st.textContent=`✓ Audio enviado: "${d.translated}"`;
+            toast('✓ Audio enviado al huésped');
+            if(d.audio_url) playAudio(d.audio_url);
+            setTimeout(()=>st.textContent='',6000);
+            loadAll();
+          }else st.textContent='❌ '+d.message;
+        }catch(e){st.textContent='❌ Error';}
+      };
+    };
+    mr.start();activeRec={room,mr};
+    btn.classList.add('rec');btn.textContent='⏹️';
+  }catch(e){toast('❌ Sin acceso al micrófono');}
+}
+
+async function saveReport(){
+  await fetch('/api/report/save',{method:'POST'});
+  toast('✓ Reporte guardado');loadReports();
+}
+
+async function loadReports(){
+  try{
+    const r=await fetch('/api/report/list');const d=await r.json();
+    const el=document.getElementById('reportList');
+    if(!d.reports?.length){el.innerHTML='<div class="no-data">Sin reportes aún</div>';return;}
+    el.innerHTML=d.reports.map(f=>`
+      <div class="rpt-item">
+        <span class="rpt-name">📄 ${f}</span>
+        <a class="rpt-dl" href="/api/report/download/${f}" download="${f}">⬇ JSON</a>
+      </div>`).join('');
+  }catch(e){}
+}
+
+async function confirmReset(){
+  if(!confirm('¿Iniciar nuevo turno?\nSe guardará el reporte y se resetearán las estadísticas.'))return;
+  await fetch('/api/reset-shift',{method:'POST'});
+  toast('✓ Turno reseteado. Reporte guardado.');loadAll();
+}
+
+async function loadAll(){
+  try{
+    const [rR,sR,cR]=await Promise.all([fetch('/api/rooms'),fetch('/api/stats'),fetch('/api/config')]);
+    const rd=await rR.json(),stats=await sR.json(),cfg=await cR.json();
+
+    document.getElementById('hotelName').textContent=cfg.hotel_name||'Panel de Recepción';
+
+    const todayTotal=Object.values(stats.today||{}).reduce((a,b)=>a+b,0);
+    document.getElementById('kpiHoy').textContent=todayTotal;
+    document.getElementById('kpiTotal').textContent=stats.total||0;
+
+    const rooms=rd.rooms||{};
+    document.getElementById('kpiHabs').textContent=Object.keys(rooms).length;
+
+    const sent=stats.sentiment||{"positive":0,"neutral":0,"negative":0};
+    const ts=Object.values(sent).reduce((a,b)=>a+b,0)||1;
+    const sat=Math.round(sent.positive/ts*100);
+    document.getElementById('kpiSat').textContent=sat+'%';
+    document.getElementById('satP').style.width=(sent.positive/ts*100)+'%';
+    document.getElementById('satN').style.width=(sent.neutral/ts*100)+'%';
+    document.getElementById('satNeg').style.width=(sent.negative/ts*100)+'%';
+    document.getElementById('satDetail').textContent=`😊 ${sent.positive} · 😐 ${sent.neutral} · 😤 ${sent.negative}`;
+
+    renderHourChart(stats.by_hour||{});
+    renderBars(stats.by_lang,LANG_N,document.getElementById('langChart'));
+    renderBars(stats.by_type,TYPE_N,document.getElementById('typeChart'));
+
+    let totalReq=0;
+    Object.values(rooms).forEach(r=>{totalReq+=(r.requests||[]).length;});
+    if(totalReq>lastCount&&lastCount>0){bellRing();toast('🔔 Nueva solicitud!');}
+    lastCount=totalReq;
+
+    // Save textarea values
+    const savedNotes={},savedReply={};
+    Object.keys(rooms).forEach(room=>{
+      const n=document.getElementById(`n_${room}`);
+      const r=document.getElementById(`r_${room}`);
+      if(n) savedNotes[room]=n.value;
+      if(r) savedReply[room]=r.value;
+    });
+
+    const grid=document.getElementById('roomsGrid');
+    const entries=Object.entries(rooms);
+    if(!entries.length){
+      grid.innerHTML='<div class="no-data">Sin actividad registrada aún</div>';
+    }else{
+      grid.innerHTML=entries.map(([room,info])=>{
+        const reqs=info.requests||[];
+        const pending=reqs.filter(r=>r.status==='pending');
+        const hasEmerg=reqs.some(r=>r.type==='emergency'&&r.status!=='done');
+        const cls=hasEmerg?'room-card emergency':pending.length?'room-card pending':'room-card';
+        const lang=info.lang||'en';
+        const stars=info.rating?'⭐'.repeat(info.rating):'';
+
+        const reqsHtml=reqs.length?reqs.slice(0,6).map((r,i)=>`
+          <div class="req-item ${r.status==='done'?'done':''} ${r.type==='emergency'?'emerg':''} ${r.type==='staff_reply'?'reply':''}">
+            <span class="req-icon">${r.icon||'💬'}</span>
+            <div class="req-body">
+              <div class="req-txt">${r.summary_es}</div>
+              <div class="req-time">${r.time}${r.timestamp?' · '+timeAgo(r.timestamp):''}</div>
+            </div>
+            <div class="req-acts">
+              ${r.audio_url?`<span class="req-play" onclick="playAudio('${r.audio_url}')" title="Reproducir">🔊</span>`:''}
+              ${r.status!=='done'&&r.status!=='info'&&r.type!=='staff_reply'?`<span class="req-done" onclick="markDone('${room}',${i})">✓</span>`:''}
+            </div>
+          </div>`).join(''):'<div class="no-data" style="padding:5px 0;font-size:0.68rem">Sin solicitudes</div>';
+
+        return `<div class="${cls}">
+          <div class="room-hdr">
+            <div class="room-num">HAB. ${room} <span style="font-size:0.75rem">${stars}</span></div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span class="room-lang">${lang.toUpperCase()} · ${LANG_N[lang]||lang}</span>
+              <span class="room-del" onclick="resetRoom('${room}')" title="Limpiar">🗑</span>
+            </div>
+          </div>
+          <div class="req-list">${reqsHtml}</div>
+          <span class="sec-lbl">Notas internas</span>
+          <textarea class="notes-ta" id="n_${room}" rows="2" placeholder="Notas sobre este huésped...">${savedNotes[room]||info.notes||''}</textarea>
+          <span class="save-note" onclick="saveNotes('${room}')">Guardar nota</span>
+          <span class="sec-lbl">Responder al huésped (escribí en español → llega en ${LANG_N[lang]||lang})</span>
+          <textarea class="reply-ta" id="r_${room}" rows="3"
+            placeholder="Escribí en español..."
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply('${room}');}"
+          >${savedReply[room]||''}</textarea>
+          <div class="reply-row">
+            <button class="reply-send" onclick="sendReply('${room}')">Enviar ➔</button>
+            <div class="reply-mic" id="m_${room}" onclick="toggleMic('${room}')" title="Grabar voz">🎙️</div>
+          </div>
+          <div class="reply-st" id="st_${room}"></div>
+        </div>`;
+      }).join('');
+    }
+
+    const reqs=stats.requests||[];
+    document.getElementById('recentList').innerHTML=reqs.length?
+      reqs.slice(0,20).map(r=>`
+        <div class="recent-item">
+          <span class="ri-time">${r.time}</span>
+          <span class="ri-room">Hab. ${r.room}</span>
+          <span class="ri-lang">${(r.lang||'?').toUpperCase()}</span>
+          <span class="ri-text">${r.text}</span>
+        </div>`).join('')
+      :'<div class="no-data">Sin pedidos registrados</div>';
+
+  }catch(e){console.error('[PANEL ERROR]',e);}
+}
+
+loadAll();
+setInterval(loadAll,15000);
+</script>
+</body>
+</html>

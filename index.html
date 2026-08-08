@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>TalkIA — Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Tenor+Sans&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#d4a843;--gold2:#f0cc70;--gold-dim:rgba(212,168,67,0.12);--gold-glow:rgba(212,168,67,0.3);--text:#f5eedc;--text-dim:rgba(245,238,220,0.38);--border:rgba(212,168,67,0.22);--surface:rgba(255,255,255,0.04);--red:#e05555;--red-dim:rgba(224,85,85,0.15);}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;outline:none;user-select:none;}
+html,body{height:100%;min-height:100dvh;overflow-x:hidden;}
+body{background:#03060f;color:var(--text);font-family:'Tenor Sans',sans-serif;display:flex;flex-direction:column;align-items:center;}
+
+#splash{position:fixed;inset:0;background:#03060f;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity 0.8s;}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-logo{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:3.5rem;letter-spacing:0.4em;color:var(--gold2);text-shadow:0 0 60px var(--gold-glow);animation:sp 1.5s ease-in-out infinite alternate;}
+.splash-sub{font-size:0.55rem;letter-spacing:0.5em;text-transform:uppercase;color:var(--text-dim);animation:fi 0.8s ease 0.4s both;}
+.splash-hotel{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1rem;color:var(--gold);animation:fi 0.8s ease 0.8s both;}
+.splash-bar{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:fi 0.8s ease 1.2s both;}
+@keyframes sp{from{text-shadow:0 0 30px var(--gold-glow);}to{text-shadow:0 0 80px var(--gold-glow);}}
+@keyframes fi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+canvas#stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.sky{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 120% 55% at 50% 100%,#0a1628 0%,transparent 70%);}
+.aurora{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.35;background:radial-gradient(ellipse 80% 20% at 30% 40%,rgba(40,180,120,0.15) 0%,transparent 70%);animation:au 18s ease-in-out infinite alternate;}
+@keyframes au{0%{opacity:0.25;}50%{opacity:0.4;}100%{opacity:0.2;}}
+.mountains{position:fixed;bottom:0;left:0;right:0;height:28vh;z-index:2;pointer-events:none;}
+
+.content{position:relative;z-index:10;width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;padding:0 16px 30px;min-height:100dvh;}
+
+header{width:100%;text-align:center;padding:32px 0 0;}
+.divider{display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:6px;}
+.divider::before,.divider::after{content:'';flex:1;max-width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold));}
+.divider::after{background:linear-gradient(90deg,var(--gold),transparent);}
+.logo{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:2.4rem;letter-spacing:0.3em;color:var(--gold2);text-shadow:0 0 40px var(--gold-glow);}
+.room-tag{font-size:0.55rem;letter-spacing:0.45em;text-transform:uppercase;color:var(--text-dim);margin-top:2px;}
+.weather-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:0.7rem;color:var(--text-dim);}
+.weather-temp{color:var(--gold);}
+
+/* LANG */
+.lang-wrap{margin:12px 0 0;position:relative;display:inline-block;}
+.lang-box{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:9px 18px 9px 14px;cursor:pointer;min-width:180px;justify-content:space-between;}
+.lang-box:hover{border-color:var(--gold);}
+.lang-name{font-size:0.75rem;letter-spacing:0.1em;color:var(--text);flex:1;text-align:center;}
+.lang-arrow{font-size:0.55rem;color:var(--gold);transition:transform 0.25s;}
+.lang-wrap.open .lang-arrow{transform:rotate(180deg);}
+.lang-sub{font-size:0.5rem;color:var(--text-dim);text-align:center;margin-top:4px;letter-spacing:0.1em;}
+.lang-drop{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0d1520;border:1px solid var(--border);border-radius:16px;overflow:hidden;width:210px;display:none;box-shadow:0 20px 50px rgba(0,0,0,0.7);z-index:100;max-height:300px;overflow-y:auto;}
+.lang-wrap.open .lang-drop{display:block;}
+.lang-opt{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;font-size:0.8rem;color:var(--text-dim);border-bottom:1px solid rgba(255,255,255,0.04);}
+.lang-opt:last-child{border-bottom:none;}
+.lang-opt:hover,.lang-opt.sel{background:var(--gold-dim);color:var(--gold2);}
+
+/* MIC */
+.mic-section{display:flex;flex-direction:column;align-items:center;width:100%;padding:8px 0 0;}
+.mic-outer{position:relative;width:186px;height:186px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+.orbit{position:absolute;border-radius:50%;border:1px solid rgba(212,168,67,0.07);pointer-events:none;}
+.o1{inset:0;}.o2{inset:20px;}
+.pr{position:absolute;inset:0;border-radius:50%;opacity:0;pointer-events:none;}
+.recording .pr{border:2px solid var(--red);animation:pr 1.5s ease-out infinite;}
+.recording .pr:nth-child(3){animation-delay:0.5s;}
+.recording .pr:nth-child(4){animation-delay:1s;}
+@keyframes pr{0%{transform:scale(1);opacity:0.7;}100%{transform:scale(1.9);opacity:0;}}
+.mic-btn{width:134px;height:134px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#1c2438,#080d18);border:2px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;position:relative;z-index:5;box-shadow:0 20px 60px rgba(0,0,0,0.7);transition:all 0.3s;touch-action:none;}
+.mic-btn svg{width:44px;height:44px;fill:var(--gold);filter:drop-shadow(0 0 10px var(--gold-glow));}
+.mic-lbl{font-size:0.44rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-dim);text-align:center;padding:0 10px;line-height:1.4;}
+.mic-btn:hover{border-color:var(--gold);}
+.recording .mic-btn{border-color:var(--red)!important;background:radial-gradient(circle at 35% 35%,#2d1010,#150505)!important;transform:scale(1.06);}
+.recording .mic-btn svg{fill:var(--red);}
+.recording .mic-btn .mic-lbl{color:var(--red);}
+.mic-hint{font-size:0.56rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--text-dim);text-align:center;min-height:1.2rem;margin-bottom:4px;}
+.loader{width:22px;height:22px;border:2px solid rgba(212,168,67,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;display:none;margin:4px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* CHAT */
+.chat-wrap{width:100%;margin:8px 0 4px;}
+.chat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.chat-ttl{font-size:0.52rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--text-dim);}
+.chat-clear{font-size:0.7rem;color:var(--text-dim);cursor:pointer;}
+.chat-box{background:rgba(10,18,35,0.7);border:1px solid var(--border);border-radius:18px;padding:14px;min-height:80px;max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(8px);}
+.chat-empty{text-align:center;color:var(--text-dim);font-size:0.75rem;padding:20px 0;font-family:'Cormorant Garamond',serif;font-style:italic;}
+.chat-msg{padding:12px 14px;border-radius:14px;animation:fadeUp 0.3s ease;}
+.chat-msg.guest{background:rgba(212,168,67,0.07);border:1px solid rgba(212,168,67,0.12);}
+.chat-msg.response{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);}
+.msg-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.msg-lang{font-size:0.52rem;background:var(--gold-dim);border:1px solid var(--border);border-radius:6px;padding:1px 7px;color:var(--gold);}
+.msg-time{font-size:0.52rem;color:var(--text-dim);}
+.msg-text{font-family:'Cormorant Garamond',serif;font-size:0.95rem;line-height:1.6;color:var(--text);}
+.msg-es{font-size:0.72rem;color:var(--text-dim);font-style:italic;margin-top:3px;}
+.msg-replay{display:inline-flex;align-items:center;gap:4px;margin-top:7px;background:var(--gold-dim);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:0.62rem;color:var(--gold);transition:all 0.2s;}
+.msg-replay:hover{background:rgba(212,168,67,0.2);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* HOTEL INFO PANEL */
+.info-panel{width:100%;background:rgba(10,18,35,0.8);border:1px solid var(--border);border-radius:16px;padding:16px;margin:6px 0;display:none;backdrop-filter:blur(10px);animation:fadeUp 0.3s ease;}
+.info-panel.open{display:block;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.info-item{background:rgba(255,255,255,0.03);border-radius:10px;padding:10px 12px;}
+.info-label{font-size:0.5rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px;}
+.info-val{font-family:'Cormorant Garamond',serif;font-size:0.88rem;color:var(--gold2);}
+.info-activities{background:rgba(255,255,255,0.03);border-radius:10px;padding:10px 12px;}
+.info-activities .info-val{font-size:0.8rem;color:var(--text-dim);font-family:'Tenor Sans',sans-serif;line-height:1.5;}
+
+/* RATING */
+.rating-section{width:100%;background:rgba(10,18,35,0.6);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center;margin:4px 0;display:none;}
+.rating-title{font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
+.stars{display:flex;justify-content:center;gap:10px;}
+.star{font-size:2rem;cursor:pointer;filter:grayscale(1) opacity(0.35);transition:transform 0.2s;}
+.star:hover,.star.active{filter:none;transform:scale(1.2);}
+.rating-thanks{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:1rem;display:none;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#0d1520;border:1px solid var(--border);border-radius:20px;padding:22px;width:100%;max-width:400px;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold2);margin-bottom:5px;}
+.modal-sub{font-size:0.65rem;color:var(--text-dim);margin-bottom:14px;}
+.modal textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-family:'Tenor Sans',sans-serif;font-size:0.85rem;resize:none;outline:none;user-select:text;min-height:80px;}
+.modal-btns{display:flex;gap:10px;margin-top:12px;}
+.modal-cancel{flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-family:'Tenor Sans',sans-serif;font-size:0.78rem;cursor:pointer;}
+.modal-send{flex:2;padding:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:#03060f;font-family:'Tenor Sans',sans-serif;font-size:0.78rem;cursor:pointer;}
+
+/* PHOTO MODAL */
+.photo-preview{width:100%;border-radius:10px;margin:10px 0;display:none;max-height:200px;object-fit:cover;}
+
+.emergency-btn{display:flex;align-items:center;gap:8px;background:var(--red-dim);border:1px solid rgba(224,85,85,0.3);border-radius:30px;padding:11px 22px;cursor:pointer;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin:5px 0;}
+
+.quick-section{width:100%;}
+.quick-label{font-size:0.52rem;letter-spacing:0.38em;text-transform:uppercase;color:var(--text-dim);text-align:center;margin-bottom:10px;}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.q-btn{background:rgba(10,18,35,0.6);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:13px 4px 11px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(6px);}
+.q-btn:active{border-color:var(--gold);background:var(--gold-dim);transform:scale(0.96);}
+.q-btn .icon{font-size:1.5rem;}
+.q-btn .qlbl{font-size:0.5rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
+
+/* ACTION ROW */
+.action-row{display:flex;gap:7px;width:100%;margin-top:5px;}
+.act-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;border-radius:13px;cursor:pointer;font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;transition:all 0.2s;}
+.act-btn.complaint{background:rgba(224,85,85,0.08);border:1px solid rgba(224,85,85,0.2);color:#e07777;}
+.act-btn.suggestion{background:var(--gold-dim);border:1px solid var(--border);color:var(--gold);}
+.act-btn.photo{background:rgba(60,130,200,0.08);border:1px solid rgba(60,130,200,0.2);color:#7ab8f5;}
+.act-btn.info{background:rgba(76,175,125,0.08);border:1px solid rgba(76,175,125,0.2);color:#7dd4a8;}
+
+/* INPUT */
+.input-section{width:100%;margin-top:10px;}
+.input-wrap{display:flex;align-items:flex-end;background:rgba(10,18,35,0.7);border:1px solid var(--border);border-radius:20px;padding:10px 10px 10px 18px;transition:border-color 0.3s;}
+.input-wrap:focus-within{border-color:var(--gold);}
+.input-wrap textarea{flex:1;background:transparent;border:none;color:var(--text);font-family:'Tenor Sans',sans-serif;font-size:0.9rem;padding:2px 0;user-select:text;resize:none;min-height:26px;max-height:120px;outline:none;line-height:1.6;overflow-y:auto;}
+.input-wrap textarea::placeholder{color:var(--text-dim);}
+.send-btn{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.3s;flex-shrink:0;margin-left:6px;}
+.send-btn.on{opacity:1;pointer-events:all;}
+.send-btn svg{width:15px;height:15px;fill:#03060f;}
+
+footer{width:100%;text-align:center;padding:14px 0 0;}
+.powered{font-size:0.45rem;letter-spacing:0.35em;text-transform:uppercase;color:rgba(255,255,255,0.08);}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-logo">TalkIA</div>
+  <div class="splash-bar"></div>
+  <div class="splash-hotel" id="splashHotel">Concierge · Ushuaia</div>
+  <div class="splash-sub">Fin del Mundo · Patagonia Argentina</div>
+</div>
+
+<!-- FEEDBACK MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Feedback</div>
+    <div class="modal-sub" id="modalSub">Write in your language</div>
+    <textarea id="modalText" rows="4" placeholder="..."></textarea>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-send" onclick="submitFeedback()">Send ➔</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO MODAL -->
+<div class="modal-overlay" id="photoOverlay">
+  <div class="modal">
+    <div class="modal-title">📸 Send a photo</div>
+    <div class="modal-sub" id="photoSub">Take or select a photo of the issue</div>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+    <img id="photoPreview" class="photo-preview">
+    <button class="modal-send" style="width:100%;margin-bottom:8px;" onclick="document.getElementById('photoInput').click()">📷 Select / Take Photo</button>
+    <textarea id="photoDesc" rows="2" placeholder="Describe the issue..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text);font-family:'Tenor Sans',sans-serif;font-size:0.82rem;outline:none;resize:none;user-select:text;margin-bottom:8px;"></textarea>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closePhotoModal()">Cancel</button>
+      <button class="modal-send" onclick="submitPhoto()">Send ➔</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="stars"></canvas>
+<div class="sky"></div>
+<div class="aurora"></div>
+<svg class="mountains" viewBox="0 0 1440 250" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0,250 L0,180 L60,140 L130,170 L200,110 L290,150 L370,80 L450,130 L520,90 L600,140 L680,60 L760,110 L840,70 L920,120 L1000,55 L1090,100 L1160,75 L1240,115 L1310,85 L1380,120 L1440,95 L1440,250 Z" fill="#060d1a"/>
+  <path d="M0,250 L0,220 L120,205 L250,215 L380,200 L510,212 L640,198 L770,210 L900,195 L1030,208 L1160,196 L1290,207 L1440,200 L1440,250 Z" fill="#060d1a" opacity="0.5"/>
+</svg>
+
+<div class="content">
+  <header>
+    <div class="divider"><span class="logo">TalkIA</span></div>
+    <div class="room-tag" id="roomTag">CONCIERGE · USHUAIA</div>
+    <div class="weather-bar" id="weatherBar" style="display:none">
+      <span id="wDesc">—</span><span class="weather-temp" id="wTemp">—°C</span><span>·</span><span id="wWind">— km/h 💨</span>
+    </div>
+    <div class="lang-wrap" id="langWrap">
+      <div class="lang-box" id="langBox">
+        <span id="selFlag">🇺🇸</span>
+        <span class="lang-name" id="selName">ENGLISH</span>
+        <span class="lang-arrow">▼</span>
+      </div>
+      <div class="lang-sub" id="langSub">for quick buttons</div>
+      <div class="lang-drop">
+        <div class="lang-opt sel" data-lang="en" data-flag="🇺🇸" data-name="ENGLISH"><span>🇺🇸</span> English</div>
+        <div class="lang-opt" data-lang="es" data-flag="🇦🇷" data-name="ESPAÑOL"><span>🇦🇷</span> Español</div>
+        <div class="lang-opt" data-lang="pt" data-flag="🇧🇷" data-name="PORTUGUÊS"><span>🇧🇷</span> Português</div>
+        <div class="lang-opt" data-lang="fr" data-flag="🇫🇷" data-name="FRANÇAIS"><span>🇫🇷</span> Français</div>
+        <div class="lang-opt" data-lang="de" data-flag="🇩🇪" data-name="DEUTSCH"><span>🇩🇪</span> Deutsch</div>
+        <div class="lang-opt" data-lang="it" data-flag="🇮🇹" data-name="ITALIANO"><span>🇮🇹</span> Italiano</div>
+        <div class="lang-opt" data-lang="zh" data-flag="🇨🇳" data-name="中文"><span>🇨🇳</span> 中文</div>
+        <div class="lang-opt" data-lang="ja" data-flag="🇯🇵" data-name="日本語"><span>🇯🇵</span> 日本語</div>
+        <div class="lang-opt" data-lang="ru" data-flag="🇷🇺" data-name="РУССКИЙ"><span>🇷🇺</span> Русский</div>
+        <div class="lang-opt" data-lang="he" data-flag="🇮🇱" data-name="עברית"><span>🇮🇱</span> עברית</div>
+        <div class="lang-opt" data-lang="hi" data-flag="🇮🇳" data-name="हिन्दी"><span>🇮🇳</span> हिन्दी</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="mic-section">
+    <div class="mic-hint" id="micHint">HOLD TO SPEAK</div>
+    <div class="mic-outer" id="micOuter">
+      <div class="orbit o1"></div><div class="orbit o2"></div>
+      <div class="pr"></div><div class="pr"></div>
+      <div class="mic-btn" id="micBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm7 8a1 1 0 0 1 1 1 8 8 0 0 1-7 7.93V22h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.07A8 8 0 0 1 4 12a1 1 0 0 1 2 0 6 6 0 0 0 12 0 1 1 0 0 1 1-1z"/></svg>
+        <span class="mic-lbl" id="micLbl">HOLD TO SPEAK</span>
+      </div>
+    </div>
+    <div class="loader" id="loader"></div>
+  </div>
+
+  <div class="chat-wrap">
+    <div class="chat-header">
+      <span class="chat-ttl" id="chatTitle">CONVERSATION</span>
+      <span class="chat-clear" onclick="clearChat()">🗑</span>
+    </div>
+    <div class="chat-box" id="chatBox">
+      <div class="chat-empty">Your conversation will appear here</div>
+    </div>
+  </div>
+
+  <!-- HOTEL INFO PANEL -->
+  <div class="info-panel" id="infoPanel">
+    <div class="info-grid">
+      <div class="info-item"><div class="info-label">Breakfast</div><div class="info-val" id="infoBreakfast">—</div></div>
+      <div class="info-item"><div class="info-label">Check-out</div><div class="info-val" id="infoCheckout">—</div></div>
+      <div class="info-item"><div class="info-label">Check-in</div><div class="info-val" id="infoCheckin">—</div></div>
+      <div class="info-item"><div class="info-label">WiFi</div><div class="info-val" id="infoWifi">—</div></div>
+    </div>
+    <div class="info-activities" id="infoActivitiesWrap" style="display:none">
+      <div class="info-label">Activities & Services</div>
+      <div class="info-val" id="infoActivities"></div>
+    </div>
+  </div>
+
+  <div class="rating-section" id="ratingSection">
+    <div class="rating-title" id="ratingTitle">HOW WAS YOUR EXPERIENCE?</div>
+    <div class="stars" id="starsContainer">
+      <span class="star" data-val="1">⭐</span><span class="star" data-val="2">⭐</span>
+      <span class="star" data-val="3">⭐</span><span class="star" data-val="4">⭐</span>
+      <span class="star" data-val="5">⭐</span>
+    </div>
+    <div class="rating-thanks" id="ratingThanks">Thank you! 🙏</div>
+  </div>
+
+  <div class="emergency-btn" id="emergencyBtn">🚨 <span id="emergencyLabel">EMERGENCY — CALL RECEPTION</span></div>
+
+  <div class="quick-section">
+    <div class="quick-label" id="quickLabel">QUICK REQUESTS</div>
+    <div class="quick-grid">
+      <div class="q-btn" data-req="Coffee or tea service"><span class="icon">☕</span><span class="qlbl" id="q0">Coffee</span></div>
+      <div class="q-btn" data-req="Room cleaning service"><span class="icon">🧹</span><span class="qlbl" id="q1">Cleaning</span></div>
+      <div class="q-btn" data-req="Taxi or transfer service"><span class="icon">🚕</span><span class="qlbl" id="q2">Taxi</span></div>
+      <div class="q-btn" data-req="Extra towels or blankets"><span class="icon">🛁</span><span class="qlbl" id="q3">Towels</span></div>
+      <div class="q-btn" data-req="Room service food or dinner"><span class="icon">🍽️</span><span class="qlbl" id="q4">Dinner</span></div>
+      <div class="q-btn" data-req="Wake up call please"><span class="icon">⏰</span><span class="qlbl" id="q5">Wake up</span></div>
+      <div class="q-btn" data-req="What is the current weather in Ushuaia"><span class="icon">🌤️</span><span class="qlbl" id="q6">Weather</span></div>
+      <div class="q-btn" data-req="Local tips and recommendations in Ushuaia"><span class="icon">🗺️</span><span class="qlbl" id="q7">Tips</span></div>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <div class="act-btn complaint" onclick="openModal('complaint')">😤 <span id="complaintLabel">Complaint</span></div>
+    <div class="act-btn suggestion" onclick="openModal('suggestion')">💡 <span id="suggestionLabel">Suggestion</span></div>
+    <div class="act-btn photo" onclick="openPhotoModal()">📸 <span id="photoLabel">Photo</span></div>
+    <div class="act-btn info" onclick="toggleInfo()">ℹ️ <span id="infoLabel">Info</span></div>
+  </div>
+
+  <div class="input-section">
+    <div class="input-wrap">
+      <textarea id="textInput" placeholder="Write your request..." rows="1"></textarea>
+      <button class="send-btn" id="sendBtn"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+    </div>
+  </div>
+
+  <footer><div class="powered">Powered by TalkIA · Fin del Mundo · Ushuaia</div></footer>
+</div>
+
+<script>
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');let stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  window.addEventListener('resize',resize);resize();
+  function init(){stars=[];const n=Math.floor((c.width*c.height)/3000);for(let i=0;i<n;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height*0.75,r:Math.random()*1.3+0.2,a:Math.random()*0.7+0.1,s:Math.random()*0.008+0.003,p:Math.random()*Math.PI*2});}
+  init();let t=0;
+  function draw(){ctx.clearRect(0,0,c.width,c.height);t+=0.012;stars.forEach(s=>{const a=s.a*(0.6+0.4*Math.sin(t*s.s*60+s.p));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=s.r>1.1?`rgba(255,240,180,${a})`:`rgba(220,230,255,${a})`;ctx.fill();});requestAnimationFrame(draw);}
+  draw();
+})();
+
+const T={
+  en:{hold:'HOLD TO SPEAK',rec:'RELEASE TO SEND',proc:'PROCESSING...',done:'DONE',err:'ERROR',ph:'Write your request...',ql:'QUICK REQUESTS',em:'EMERGENCY — CALL RECEPTION',ct:'CONVERSATION',rt:'HOW WAS YOUR EXPERIENCE?',rth:'Thank you! 🙏',ls:'for quick buttons',co:'Complaint',su:'Suggestion',ph2:'Photo',inf:'Hotel Info',rp:'Repeat 🔊',mc:'Share your complaint',ms:'Share your suggestion',msb:'Write in your language',q:['Coffee','Cleaning','Taxi','Towels','Dinner','Wake up','Weather','Tips']},
+  es:{hold:'MANTENÉ PARA HABLAR',rec:'SOLTÁ PARA ENVIAR',proc:'PROCESANDO...',done:'LISTO',err:'ERROR',ph:'Escriba su pedido...',ql:'PEDIDOS RÁPIDOS',em:'EMERGENCIA — LLAMAR RECEPCIÓN',ct:'CONVERSACIÓN',rt:'¿CÓMO FUE TU EXPERIENCIA?',rth:'¡Gracias! 🙏',ls:'para botones rápidos',co:'Queja',su:'Sugerencia',ph2:'Foto',inf:'Info Hotel',rp:'Repetir 🔊',mc:'Compartí tu queja',ms:'Compartí tu sugerencia',msb:'Escribí en tu idioma',q:['Café','Limpieza','Taxi','Toallas','Cena','Despertar','Clima','Tips']},
+  pt:{hold:'SEGURE PARA FALAR',rec:'SOLTE PARA ENVIAR',proc:'PROCESSANDO...',done:'PRONTO',err:'ERRO',ph:'Escreva seu pedido...',ql:'PEDIDOS RÁPIDOS',em:'EMERGÊNCIA — CHAMAR RECEPÇÃO',ct:'CONVERSA',rt:'COMO FOI SUA EXPERIÊNCIA?',rth:'Obrigado! 🙏',ls:'para botões rápidos',co:'Reclamação',su:'Sugestão',ph2:'Foto',inf:'Info Hotel',rp:'Repetir 🔊',mc:'Compartilhe sua reclamação',ms:'Compartilhe sua sugestão',msb:'Escreva no seu idioma',q:['Café','Limpeza','Táxi','Toalhas','Jantar','Acordar','Clima','Dicas']},
+  fr:{hold:'MAINTENEZ POUR PARLER',rec:'RELÂCHEZ POUR ENVOYER',proc:'TRAITEMENT...',done:'PRÊT',err:'ERREUR',ph:'Écrivez votre demande...',ql:'DEMANDES RAPIDES',em:'URGENCE — APPELER LA RÉCEPTION',ct:'CONVERSATION',rt:'COMMENT ÉTAIT VOTRE EXPÉRIENCE?',rth:'Merci! 🙏',ls:'pour boutons rapides',co:'Réclamation',su:'Suggestion',ph2:'Photo',inf:'Info Hôtel',rp:'Répéter 🔊',mc:'Partagez votre réclamation',ms:'Partagez votre suggestion',msb:'Écrivez dans votre langue',q:['Café','Nettoyage','Taxi','Serviettes','Dîner','Réveil','Météo','Conseils']},
+  de:{hold:'HALTEN ZUM SPRECHEN',rec:'LOSLASSEN ZUM SENDEN',proc:'VERARBEITUNG...',done:'FERTIG',err:'FEHLER',ph:'Ihre Anfrage...',ql:'SCHNELLANFRAGEN',em:'NOTFALL — REZEPTION RUFEN',ct:'GESPRÄCH',rt:'WIE WAR IHRE ERFAHRUNG?',rth:'Danke! 🙏',ls:'für Schnelltasten',co:'Beschwerde',su:'Vorschlag',ph2:'Foto',inf:'Hotel Info',rp:'Wiederholen 🔊',mc:'Teilen Sie Ihre Beschwerde',ms:'Teilen Sie Ihren Vorschlag',msb:'Schreiben Sie in Ihrer Sprache',q:['Kaffee','Reinigung','Taxi','Handtücher','Abendessen','Wecker','Wetter','Tipps']},
+  it:{hold:'TIENI PER PARLARE',rec:'RILASCIA PER INVIARE',proc:'ELABORAZIONE...',done:'PRONTO',err:'ERRORE',ph:'Scrivi la tua richiesta...',ql:'RICHIESTE RAPIDE',em:'EMERGENZA — CHIAMA RECEPTION',ct:'CONVERSAZIONE',rt:'COM\'ERA LA TUA ESPERIENZA?',rth:'Grazie! 🙏',ls:'per pulsanti rapidi',co:'Reclamo',su:'Suggerimento',ph2:'Foto',inf:'Info Hotel',rp:'Ripeti 🔊',mc:'Condividi il tuo reclamo',ms:'Condividi il tuo suggerimento',msb:'Scrivi nella tua lingua',q:['Caffè','Pulizia','Taxi','Asciugamani','Cena','Sveglia','Meteo','Consigli']},
+  zh:{hold:'按住说话',rec:'松开发送',proc:'处理中...',done:'完成',err:'错误',ph:'请写下您的需求...',ql:'快速请求',em:'紧急情况 — 呼叫前台',ct:'对话',rt:'您的体验如何？',rth:'谢谢！🙏',ls:'用于快速按钮',co:'投诉',su:'建议',ph2:'照片',inf:'酒店信息',rp:'重播 🔊',mc:'分享您的投诉',ms:'分享您的建议',msb:'用您的语言书写',q:['咖啡','清洁','出租车','毛巾','晚餐','叫醒','天气','建议']},
+  ja:{hold:'押して話す',rec:'離して送信',proc:'処理中...',done:'完了',err:'エラー',ph:'ご要望をお書きください...',ql:'クイックリクエスト',em:'緊急 — フロントを呼ぶ',ct:'会話',rt:'ご体験はいかがでしたか？',rth:'ありがとうございます！🙏',ls:'クイックボタン用',co:'苦情',su:'提案',ph2:'写真',inf:'ホテル情報',rp:'再生 🔊',mc:'苦情を共有する',ms:'提案を共有する',msb:'あなたの言語で書いてください',q:['コーヒー','清掃','タクシー','タオル','夕食','起床','天気','観光']},
+  ru:{hold:'УДЕРЖИВАЙТЕ ДЛЯ РЕЧИ',rec:'ОТПУСТИТЕ ДЛЯ ОТПРАВКИ',proc:'ОБРАБОТКА...',done:'ГОТОВО',err:'ОШИБКА',ph:'Напишите запрос...',ql:'БЫСТРЫЕ ЗАПРОСЫ',em:'ЭКСТРЕННЫЙ — ВЫЗОВ RECEPTION',ct:'РАЗГОВОР',rt:'КАК ПРОШЁЛ ВАШ ОПЫТ?',rth:'Спасибо! 🙏',ls:'для быстрых кнопок',co:'Жалоба',su:'Предложение',ph2:'Фото',inf:'Инфо отеля',rp:'Повторить 🔊',mc:'Поделитесь жалобой',ms:'Поделитесь предложением',msb:'Пишите на своем языке',q:['Кофе','Уборка','Такси','Полотенца','Ужин','Будильник','Погода','Советы']},
+  he:{hold:'לחץ לדיבור',rec:'שחרר לשליחה',proc:'מעבד...',done:'מוכן',err:'שגיאה',ph:'כתוב את בקשתך...',ql:'בקשות מהירות',em:'חירום — קרא לקבלה',ct:'שיחה',rt:'איך היה החוויה שלך?',rth:'תודה! 🙏',ls:'לכפתורים מהירים',co:'תלונה',su:'הצעה',ph2:'תמונה',inf:'מידע מלון',rp:'חזור 🔊',mc:'שתף את תלונתך',ms:'שתף את הצעתך',msb:'כתוב בשפתך',q:['קפה','ניקיון','מונית','מגבות','ארוחה','השכמה','מזג אויר','טיפים']},
+  hi:{hold:'बोलने के लिए दबाएं',rec:'भेजने के लिए छोड़ें',proc:'प्रक्रिया...',done:'तैयार',err:'त्रुटि',ph:'अपना अनुरोध लिखें...',ql:'त्वरित अनुरोध',em:'आपातकाल — रिसेप्शन बुलाएं',ct:'बातचीत',rt:'आपका अनुभव कैसा था?',rth:'धन्यवाद! 🙏',ls:'त्वरित बटन के लिए',co:'शिकायत',su:'सुझाव',ph2:'फोटो',inf:'होटल जानकारी',rp:'दोहराएं 🔊',mc:'अपनी शिकायत साझा करें',ms:'अपना सुझाव साझा करें',msb:'अपनी भाषा में लिखें',q:['कॉफ़ी','सफाई','टैक्सी','तौलिए','खाना','जगाएं','मौसम','सुझाव']}
+};
+function tr(k){return(T[lang]||T.en)[k]||'';}
+
+let lang='en',isRecording=false,mediaRecorder,audioChunks=[],msgCount=0,feedbackType='complaint';
+let currentAudio=null, photoFile=null;
+const room=new URLSearchParams(window.location.search).get('room')||'LUXURY';
+const SK='talkai_v6_'+room;
+let chatHistory=[];
+try{chatHistory=JSON.parse(localStorage.getItem(SK))||[];}catch(e){}
+
+const micOuter=document.getElementById('micOuter');
+const micHint=document.getElementById('micHint');
+const micLbl=document.getElementById('micLbl');
+const loader=document.getElementById('loader');
+const chatBox=document.getElementById('chatBox');
+const textInput=document.getElementById('textInput');
+const sendBtn=document.getElementById('sendBtn');
+const langWrap=document.getElementById('langWrap');
+
+if(room!=='LUXURY') document.getElementById('roomTag').textContent='ROOM '+room+' · USHUAIA';
+setTimeout(()=>{const s=document.getElementById('splash');s.classList.add('hide');setTimeout(()=>s.remove(),900);},2200);
+
+// WEATHER
+fetch('/api/weather').then(r=>r.json()).then(w=>{
+  if(w.temp!==undefined){
+    document.getElementById('wDesc').textContent=w.desc;
+    document.getElementById('wTemp').textContent=w.temp+'°C';
+    document.getElementById('wWind').textContent=w.wind+' km/h 💨';
+    document.getElementById('weatherBar').style.display='flex';
+  }
+}).catch(()=>{});
+
+// HOTEL INFO
+let hotelConfig={};
+fetch('/api/config').then(r=>r.json()).then(cfg=>{
+  hotelConfig=cfg;
+  document.getElementById('infoBreakfast').textContent=cfg.breakfast_time||'—';
+  document.getElementById('infoCheckout').textContent=cfg.checkout_time||'—';
+  document.getElementById('infoCheckin').textContent=cfg.checkin_time||'—';
+  document.getElementById('infoWifi').textContent=cfg.wifi_password||'Ask reception';
+  if(cfg.activities){
+    document.getElementById('infoActivities').textContent=cfg.activities;
+    document.getElementById('infoActivitiesWrap').style.display='block';
+  }
+}).catch(()=>{});
+
+// LANG
+document.getElementById('langBox').addEventListener('click',e=>{e.stopPropagation();langWrap.classList.toggle('open');});
+document.addEventListener('click',()=>langWrap.classList.remove('open'));
+document.querySelectorAll('.lang-opt').forEach(opt=>{
+  opt.addEventListener('click',e=>{
+    e.stopPropagation();
+    document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('sel'));
+    opt.classList.add('sel');
+    lang=opt.dataset.lang;
+    document.getElementById('selFlag').textContent=opt.dataset.flag;
+    document.getElementById('selName').textContent=opt.dataset.name;
+    langWrap.classList.remove('open');
+    updateLabels();
+  });
+});
+
+function updateLabels(){
+  const t=T[lang]||T.en;
+  micHint.textContent=t.hold; micLbl.textContent=t.hold;
+  textInput.placeholder=t.ph;
+  document.getElementById('quickLabel').textContent=t.ql;
+  document.getElementById('emergencyLabel').textContent=t.em;
+  document.getElementById('chatTitle').textContent=t.ct;
+  document.getElementById('langSub').textContent=t.ls;
+  document.getElementById('complaintLabel').textContent=t.co;
+  document.getElementById('suggestionLabel').textContent=t.su;
+  document.getElementById('photoLabel').textContent=t.ph2;
+  document.getElementById('infoLabel').textContent=t.inf;
+  t.q.forEach((l,i)=>{const el=document.getElementById('q'+i);if(el)el.textContent=l;});
+}
+
+// INFO TOGGLE
+function toggleInfo(){
+  document.getElementById('infoPanel').classList.toggle('open');
+}
+
+// AUDIO REPLAY
+function playAudio(url,btn){
+  if(currentAudio){currentAudio.pause();currentAudio=null;}
+  currentAudio=new Audio(url);
+  currentAudio.play().catch(()=>{});
+  if(btn) currentAudio.onended=()=>btn.classList.remove('playing');
+}
+
+// FEEDBACK MODAL
+function openModal(type){
+  feedbackType=type;
+  const t=T[lang]||T.en;
+  document.getElementById('modalTitle').textContent=type==='complaint'?t.mc:t.ms;
+  document.getElementById('modalSub').textContent=t.msb;
+  document.getElementById('modalText').value='';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+async function submitFeedback(){
+  const text=document.getElementById('modalText').value.trim();
+  if(!text) return;
+  closeModal();
+  await fetch('/api/complaint',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,room,lang,type:feedbackType})}).catch(()=>{});
+  const t=T[lang]||T.en;
+  addMsg((feedbackType==='complaint'?'😤 ':'💡 ')+text,'',lang,true,null);
+  addMsg(feedbackType==='complaint'?'Thank you for your feedback. We will address this immediately.':'Thank you for your suggestion!','',lang,false,null);
+}
+
+// PHOTO MODAL
+function openPhotoModal(){document.getElementById('photoOverlay').classList.add('open');}
+function closePhotoModal(){document.getElementById('photoOverlay').classList.remove('open');photoFile=null;document.getElementById('photoPreview').style.display='none';}
+document.getElementById('photoInput').addEventListener('change',function(){
+  const file=this.files[0];
+  if(!file) return;
+  photoFile=file;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=document.getElementById('photoPreview');
+    img.src=e.target.result;img.style.display='block';
+  };
+  reader.readAsDataURL(file);
+});
+async function submitPhoto(){
+  if(!photoFile){alert('Select a photo first');return;}
+  closePhotoModal();
+  const desc=document.getElementById('photoDesc').value.trim();
+  const reader=new FileReader();
+  reader.readAsDataURL(photoFile);
+  reader.onloadend=async()=>{
+    const b64=reader.result.split(',')[1];
+    addMsg('📸 '+(desc||'Photo sent'),'',lang,true,null);
+    const res=await fetch('/api/photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo:b64,room,lang,description:desc})}).catch(()=>{});
+    if(res){const d=await res.json();if(d.summary) addMsg('✓ Photo received. Staff has been notified.','',lang,false,null);}
+  };
+}
+
+// CHAT
+function msgHTML(m){
+  const cls=m.isGuest?'guest':'response';
+  const es=!m.isGuest&&m.summary_es&&m.summary_es!==m.text?`<div class="msg-es">🇦🇷 ${m.summary_es}</div>`:'';
+  const rp=m.audioUrl?`<div class="msg-replay" onclick="playAudio('${m.audioUrl}',this)">${tr('rp')}</div>`:'';
+  return `<div class="chat-msg ${cls}"><div class="msg-top"><span class="msg-lang">${(m.langCode||lang).toUpperCase()}</span><span class="msg-time">${m.t}</span></div><div class="msg-text">${m.text}</div>${es}${rp}</div>`;
+}
+function renderChat(){
+  if(!chatHistory.length){chatBox.innerHTML='<div class="chat-empty">Your conversation will appear here</div>';return;}
+  chatBox.innerHTML=chatHistory.map(m=>msgHTML(m)).join('');
+  chatBox.scrollTop=chatBox.scrollHeight;
+}
+function appendMsg(m){
+  const empty=chatBox.querySelector('.chat-empty');
+  if(empty) empty.remove();
+  const div=document.createElement('div');
+  div.innerHTML=msgHTML(m);
+  chatBox.appendChild(div.firstElementChild);
+  chatBox.scrollTop=chatBox.scrollHeight;
+}
+function addMsg(text,summary_es,langCode,isGuest,audioUrl){
+  const now=new Date();
+  const t=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const m={text,summary_es,langCode,t,isGuest,audioUrl};
+  chatHistory.push(m);
+  try{localStorage.setItem(SK,JSON.stringify(chatHistory.slice(0,30)));}catch(e){}
+  appendMsg(m);
+  msgCount++;
+  if(msgCount===3) document.getElementById('ratingSection').style.display='block';
+}
+function clearChat(){chatHistory=[];try{localStorage.removeItem(SK);}catch(e){}chatBox.innerHTML='<div class="chat-empty">Your conversation will appear here</div>';}
+renderChat();
+
+// STARS
+document.querySelectorAll('.star').forEach(star=>{
+  star.addEventListener('click',()=>{
+    const val=parseInt(star.dataset.val);
+    document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<val));
+    document.getElementById('starsContainer').style.display='none';
+    document.getElementById('ratingThanks').style.display='block';
+    document.getElementById('ratingThanks').textContent=tr('rth');
+    fetch('/api/rating',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({stars:val,room})}).catch(()=>{});
+  });
+});
+
+function playSuccess(){
+  try{const ctx=new(window.AudioContext||window.webkitAudioContext)();[523,659,784].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;g.gain.setValueAtTime(0,ctx.currentTime+i*0.12);g.gain.linearRampToValueAtTime(0.1,ctx.currentTime+i*0.12+0.05);g.gain.linearRampToValueAtTime(0,ctx.currentTime+i*0.12+0.25);o.start(ctx.currentTime+i*0.12);o.stop(ctx.currentTime+i*0.12+0.3);});}catch(e){}
+}
+
+async function sendToTalkIA(payload,displayText){
+  const t=T[lang]||T.en;
+  micHint.textContent=t.proc; micLbl.textContent=t.proc;
+  loader.style.display='block';
+  if(displayText) addMsg(displayText,'',lang,true,null);
+  try{
+    const res=await fetch('/process-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,room,lang})});
+    if(!res.ok) throw new Error('Error '+res.status);
+    const data=await res.json();
+    loader.style.display='none';
+    micHint.textContent=t.hold; micLbl.textContent=t.hold;
+    if(data.text){
+      addMsg(data.text,data.summary_es||'',data.lang_code||lang,false,data.audio_url||null);
+      playSuccess();
+      if(data.audio_url) playAudio(data.audio_url,null);
+    }
+  }catch(e){
+    loader.style.display='none';
+    micHint.textContent=t.err; micLbl.textContent=t.err;
+    addMsg('⚠️ '+e.message,'',lang,false,null);
+  }
+}
+
+// MIC HOLD
+const micBtn=document.getElementById('micBtn');
+function startRec(){
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    mediaRecorder=new MediaRecorder(stream);audioChunks=[];
+    mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
+    mediaRecorder.start();isRecording=true;
+    micOuter.classList.add('recording');
+    micHint.textContent=(T[lang]||T.en).rec;
+    micHint.style.color='var(--red)';
+    micLbl.textContent=(T[lang]||T.en).rec;
+  }).catch(()=>alert('Microphone access denied.'));
+}
+function stopRec(){
+  if(!isRecording||!mediaRecorder) return;
+  mediaRecorder.onstop=()=>{
+    const blob=new Blob(audioChunks,{type:'audio/webm'});
+    const reader=new FileReader();reader.readAsDataURL(blob);
+    reader.onloadend=()=>sendToTalkIA({audio:reader.result.split(',')[1]},'🎙️ audio');
+    mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+  };
+  mediaRecorder.stop();isRecording=false;
+  micOuter.classList.remove('recording');
+  micHint.style.color='';
+}
+micBtn.addEventListener('touchstart',e=>{e.preventDefault();startRec();},{passive:false});
+micBtn.addEventListener('touchend',e=>{e.preventDefault();stopRec();},{passive:false});
+micBtn.addEventListener('mousedown',e=>{e.preventDefault();startRec();});
+micBtn.addEventListener('mouseup',stopRec);
+micBtn.addEventListener('mouseleave',()=>{if(isRecording)stopRec();});
+
+document.getElementById('emergencyBtn').addEventListener('click',()=>{
+  sendToTalkIA({text:'EMERGENCY — Guest needs immediate assistance'},'🚨 EMERGENCY');
+});
+document.querySelectorAll('.q-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>sendToTalkIA({text:btn.dataset.req},btn.querySelector('.icon').textContent+' '+btn.querySelector('.qlbl').textContent));
+});
+textInput.addEventListener('input',()=>{
+  sendBtn.classList.toggle('on',textInput.value.trim().length>0);
+  textInput.style.height='auto';
+  textInput.style.height=Math.min(textInput.scrollHeight,120)+'px';
+});
+textInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey&&textInput.value.trim()){e.preventDefault();sendBtn.click();}
+});
+sendBtn.addEventListener('click',()=>{
+  if(textInput.value.trim()){
+    const t=textInput.value.trim();
+    sendToTalkIA({text:t},t);
+    textInput.value='';textInput.style.height='auto';sendBtn.classList.remove('on');
+  }
+});
+
+// POLLING — staff messages every 5s
+async function checkStaffMessages(){
+  if(room==='LUXURY') return;
+  try{
+    const res=await fetch(`/api/rooms/${room}/pending`);
+    const data=await res.json();
+    (data.messages||[]).forEach(m=>{
+      if(m.response){
+        addMsg(m.response,'',lang,false,m.audio_url||null);
+        if(m.audio_url) playAudio(m.audio_url,null);
+        playSuccess();
+      }
+    });
+  }catch(e){}
+}
+setInterval(checkStaffMessages,5000);
+</script>
+</body>
+</html>
