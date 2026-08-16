@@ -75,11 +75,20 @@ def save_json(path, data):
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+ACTIVE_TOKENS = {}
+
 def load_config():
     return load_json(CONFIG_FILE, {
         "hotel_name":"Mi Hotel","notify_telegram":True,"primary_color":"#d4a843",
         "breakfast_time":"07:00 - 10:00","checkout_time":"12:00","checkin_time":"14:00",
-        "wifi_password":"","activities":"","hotel_info":""
+        "wifi_password":"","activities":"","hotel_info":"",
+        "admin_user":"admin","admin_pass":"admin123",
+        "groq_api_key": GROQ_API_KEY,
+        "tg_token_hotel": TG_TOKEN_HOTEL,
+        "tg_chat_hotel": TG_CHAT_HOTEL,
+        "report_email": REPORT_EMAIL,
+        "trial_mode": False,
+        "max_trial_days": 30
     })
 
 def load_stats():
@@ -201,112 +210,9 @@ def build_excel_report():
         lines.append(f"{r.get('room','')},{r.get('lang','')},{r.get('type','')},\"{r.get('text','').replace(chr(34),chr(39))}\",{r.get('time','')},{s.get('day','')},{r.get('sentiment','')}")
     return "\n".join(lines)
 
-# ── BOT TRADUCTOR PERSONAL ────────────────────────────────
-def start_bot_traductor():
-    try:
-        import telebot
-        bot = telebot.TeleBot(TG_TOKEN_BOT, threaded=True)
-
-        LANG_FLAGS = {"es":"🇦🇷","en":"🇺🇸","ja":"🇯🇵","ru":"🇷🇺","zh":"🇨🇳",
-                      "de":"🇩🇪","it":"🇮🇹","fr":"🇫🇷","pt":"🇧🇷","ko":"🇰🇷","he":"🇮🇱","hi":"🇮🇳"}
-        FLAG_MAP   = {"🇺🇸":"en","🇫🇷":"fr","🇧🇷":"pt","🇯🇵":"ja","🇷🇺":"ru",
-                      "🇩🇪":"de","🇮🇱":"he","🇮🇳":"hi","🇨🇳":"zh","🇮🇹":"it","🇰🇷":"ko"}
-        user_target = {}
-
-        def tts_bot(text, voice, path):
-            loop = asyncio.new_event_loop(); asyncio.set_event_loop(loop)
-            try:    loop.run_until_complete(edge_tts.Communicate(text, voice).save(path))
-            finally: loop.close()
-
-        def transcribe_bot(audio_bytes):
-            tmp = f"/tmp/tr_{uuid.uuid4().hex[:8]}.ogg"
-            with open(tmp,"wb") as f: f.write(audio_bytes)
-            try:
-                with open(tmp,"rb") as f:
-                    r = client.audio.transcriptions.create(
-                        file=("audio.ogg",f,"audio/ogg"),
-                        model="whisper-large-v3-turbo",response_format="verbose_json")
-                return r.text.strip(), r.language[:2]
-            finally:
-                if os.path.exists(tmp): os.remove(tmp)
-
-        def translate_bot(text, from_lang, to_lang):
-            r = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role":"user","content":f"Translate from {from_lang} to {to_lang}. Return ONLY the translation.\n\nText: {text}"}],
-                max_tokens=500, temperature=0.2)
-            return r.choices[0].message.content.strip()
-
-        def keyboard():
-            m = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-            m.row(telebot.types.KeyboardButton("🇺🇸 EN"),telebot.types.KeyboardButton("🇫🇷 FR"),telebot.types.KeyboardButton("🇧🇷 PT"))
-            m.row(telebot.types.KeyboardButton("🇯🇵 JA"),telebot.types.KeyboardButton("🇷🇺 RU"),telebot.types.KeyboardButton("🇩🇪 DE"))
-            m.row(telebot.types.KeyboardButton("🇮🇱 HE"),telebot.types.KeyboardButton("🇮🇳 HI"),telebot.types.KeyboardButton("🇨🇳 ZH"))
-            m.row(telebot.types.KeyboardButton("🇮🇹 IT"),telebot.types.KeyboardButton("🇰🇷 KO"))
-            return m
-
-        @bot.message_handler(commands=["start"])
-        def start(msg):
-            user_target[msg.chat.id]="en"
-            bot.send_message(msg.chat.id,
-                "🎙️ *Traductor Personal TalkIA*\n\n"
-                "Hablás en *español* → traduzco al idioma del huésped\n"
-                "El huésped habla → traduzco al *español*\n\n"
-                "Elegí el idioma del huésped 👇",
-                parse_mode="Markdown", reply_markup=keyboard())
-
-        @bot.message_handler(func=lambda m: any(f in m.text for f in FLAG_MAP))
-        def set_lang(msg):
-            for flag, code in FLAG_MAP.items():
-                if flag in msg.text:
-                    user_target[msg.chat.id]=code
-                    bot.send_message(msg.chat.id,
-                        f"Idioma: *{LANG_FLAGS.get(code,'')} {code.upper()}*\n\nMandá el audio.",
-                        parse_mode="Markdown")
-                    return
-
-        @bot.message_handler(content_types=["voice"])
-        def handle_voice(msg):
-            chat_id=msg.chat.id; target=user_target.get(chat_id,"en")
-            out=f"/tmp/tr_out_{uuid.uuid4().hex[:8]}.mp3"
-            status=bot.send_message(chat_id,"Traduciendo...")
-            try:
-                fi=bot.get_file(msg.voice.file_id); audio=bot.download_file(fi.file_path)
-                original,detected=transcribe_bot(audio)
-                if detected=="es":
-                    translation=translate_bot(original,"Spanish",target)
-                    voice_key=VOICES.get(target,VOICES["en"]); flag=LANG_FLAGS.get(target,"")
-                    texto=f"Vos a {flag} {target.upper()}\n\n_{original}_\n\n*{translation}*"
-                else:
-                    user_target[chat_id]=detected
-                    translation=translate_bot(original,detected,"Spanish")
-                    voice_key=VOICES["es"]; flag=LANG_FLAGS.get(detected,"")
-                    texto=f"Huesped {flag} {detected.upper()} a ES\n\n_{original}_\n\n*{translation}*"
-                bot.delete_message(chat_id,status.message_id)
-                bot.send_message(chat_id,texto,parse_mode="Markdown")
-                def send_audio():
-                    try:
-                        tts_bot(translation,voice_key,out)
-                        with open(out,"rb") as f: bot.send_voice(chat_id,f)
-                    except: pass
-                    finally:
-                        if os.path.exists(out): os.remove(out)
-                threading.Thread(target=send_audio,daemon=True).start()
-            except Exception as e:
-                try: bot.edit_message_text(f"Error: {e}",chat_id,status.message_id)
-                except: bot.send_message(chat_id,f"Error: {e}")
-
-        print("[BOT TRADUCTOR] ONLINE")
-        while True:
-            try: bot.polling(none_stop=True,interval=0,timeout=20)
-            except Exception as e:
-                print(f"[BOT TRADUCTOR] {e}")
-                time.sleep(5)
-    except Exception as e:
-        print(f"[BOT TRADUCTOR FATAL] {e}")
-
-# Arrancar bot en thread al iniciar
-threading.Thread(target=start_bot_traductor, daemon=True).start()
+# ── BOT TRADUCTOR INDEPENDIENTE ─────────────────────────
+# El Bot Traductor corre de forma 100% autónoma en bot_traductor.py
+# (Evitando conflictos de Telegram Polling entre el servidor web y el bot)
 
 # ── MAIN ENDPOINT ────────────────────────────────────────
 @app.route('/process-request', methods=['POST'])
@@ -585,15 +491,67 @@ def save_complaint():
     save_json(STATS_FILE,s)
     return jsonify({"status":"ok"})
 
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.json or {}
+    user = data.get('username', '').strip()
+    pwd = data.get('password', '').strip()
+    cfg = load_config()
+    
+    expected_user = cfg.get('admin_user', 'admin')
+    expected_pass = cfg.get('admin_pass', 'admin123')
+    
+    if user == expected_user and pwd == expected_pass:
+        token = uuid.uuid4().hex
+        ACTIVE_TOKENS[token] = time.time()
+        return jsonify({"status": "ok", "token": token, "username": user})
+    return jsonify({"error": "Usuario o contraseña incorrectos"}), 401
+
+@app.route('/api/verify_session', methods=['GET', 'POST'])
+def api_verify_session():
+    auth_header = request.headers.get('Authorization', '')
+    token = request.headers.get('X-Session-Token', '')
+    if auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+    if not token and request.json:
+        token = request.json.get('token', '')
+        
+    if token and token in ACTIVE_TOKENS:
+        return jsonify({"valid": True})
+    return jsonify({"valid": False}), 401
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    token = request.headers.get('X-Session-Token', '')
+    if token in ACTIVE_TOKENS:
+        del ACTIVE_TOKENS[token]
+    return jsonify({"status": "ok"})
+
 @app.route('/api/stats')
 def api_stats(): return jsonify(load_stats())
 
 @app.route('/api/config', methods=['GET','POST'])
 def api_config():
+    global GROQ_API_KEY, TG_TOKEN_HOTEL, TG_CHAT_HOTEL, REPORT_EMAIL, client
     if request.method=='POST':
         cfg=load_config()
-        for k,v in request.json.items(): cfg[k]=v
-        save_json(CONFIG_FILE,cfg); return jsonify({"status":"ok"})
+        data = request.json or {}
+        for k,v in data.items(): 
+            cfg[k]=v
+        save_json(CONFIG_FILE,cfg)
+        
+        # Actualizar variables globales si cambiaron
+        if 'groq_api_key' in data and data['groq_api_key']:
+            GROQ_API_KEY = data['groq_api_key']
+            client = Groq(api_key=GROQ_API_KEY)
+        if 'tg_token_hotel' in data and data['tg_token_hotel']:
+            TG_TOKEN_HOTEL = data['tg_token_hotel']
+        if 'tg_chat_hotel' in data and data['tg_chat_hotel']:
+            TG_CHAT_HOTEL = data['tg_chat_hotel']
+        if 'report_email' in data and data['report_email']:
+            REPORT_EMAIL = data['report_email']
+            
+        return jsonify({"status":"ok"})
     return jsonify(load_config())
 
 @app.route('/api/weather')
@@ -614,3 +572,4 @@ if __name__=='__main__':
     print("="*45); print("  TalkIA — ONLINE"); print("="*45)
     port=int(os.environ.get('PORT',5000))
     app.run(host='0.0.0.0',port=port,debug=False)
+

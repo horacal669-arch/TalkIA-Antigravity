@@ -10,7 +10,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Tenor Sans',sans-serif;min-height:100vh;padding:24px 16px;display:flex;justify-content:center;}
 .sky{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 120% 55% at 50% 100%,#0a1628 0%,transparent 70%);}
-.wrap{position:relative;z-index:10;width:100%;max-width:520px;}
+.wrap{position:relative;z-index:10;width:100%;max-width:560px;}
 header{text-align:center;margin-bottom:24px;}
 .logo{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:2rem;letter-spacing:0.25em;color:var(--gold2);}
 .sub{font-size:0.55rem;letter-spacing:0.35em;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
@@ -23,7 +23,7 @@ header{text-align:center;margin-bottom:24px;}
 .field input::placeholder,.field textarea::placeholder{color:var(--text-dim);}
 .field textarea{resize:vertical;min-height:60px;line-height:1.5;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px;}
 .toggle-info .tl{font-size:0.8rem;color:var(--text);}
 .toggle-info .ts{font-size:0.62rem;color:var(--text-dim);margin-top:2px;}
 .toggle{position:relative;width:46px;height:26px;flex-shrink:0;}
@@ -38,7 +38,7 @@ input:checked+.slider::before{transform:translateX(20px);}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(10,18,35,0.97);border:1px solid var(--gold);border-radius:30px;padding:11px 26px;font-size:0.72rem;color:var(--gold2);opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .nav-bar{display:flex;justify-content:center;gap:16px;margin-top:20px;}
-.nav-link{color:var(--text-dim);font-size:0.58rem;letter-spacing:0.15em;text-decoration:none;text-transform:uppercase;transition:color 0.2s;}
+.nav-link{color:var(--text-dim);font-size:0.58rem;letter-spacing:0.15em;text-decoration:none;text-transform:uppercase;transition:color 0.2s;cursor:pointer;}
 .nav-link:hover{color:var(--gold);}
 </style>
 </head>
@@ -47,26 +47,45 @@ input:checked+.slider::before{transform:translateX(20px);}
 <div class="wrap">
   <header>
     <div class="logo">TalkIA</div>
-    <div class="sub">Configuración del Hotel</div>
+    <div class="sub">Configuración del Hotel & Llaves API</div>
   </header>
 
   <div class="card">
     <div class="card-title">Información del Hotel</div>
-    <div class="field"><label>Nombre del Hotel</label><input type="text" id="hotelName" placeholder="Ej: Hotel Tierra del Fuego"></div>
+    <div class="field"><label>Nombre del Hotel</label><input type="text" id="hotelName" placeholder="Ej: Hotel Ushuaia Patagonia"></div>
     <div class="field"><label>Información General</label><textarea id="hotelInfo" rows="3" placeholder="Descripción breve del hotel, servicios especiales, etc."></textarea></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔑 Llaves de API & Seguridad (Administración)</div>
+    <div class="field"><label>Contraseña Administrador</label><input type="text" id="adminPass" placeholder="admin123"></div>
+    <div class="field"><label>Groq API Key (IA)</label><input type="password" id="groqApiKey" placeholder="gsk_..."></div>
+    <div class="row2">
+      <div class="field"><label>Telegram Token Hotel</label><input type="password" id="tgTokenHotel" placeholder="8377451943:AA..."></div>
+      <div class="field"><label>Telegram Chat ID</label><input type="text" id="tgChatHotel" placeholder="6618443331"></div>
+    </div>
+    <div class="field"><label>Email para Reportes</label><input type="email" id="reportEmail" placeholder="soyhorazio@gmail.com"></div>
+    
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="tl">Modo Trial / Demostración</div>
+        <div class="ts">Activar limitación de licencia demo</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="trialMode"><span class="slider"></span></label>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-title">Horarios y Servicios</div>
     <div class="row2">
-      <div class="field"><label>Horario Desayuno</label><input type="text" id="breakfastTime" placeholder="07:00 - 10:00"></div>
+      <div class="field"><label>Horario Desayuno</label><input type="text" id="breakfastTime" placeholder="07:00 - 10:30"></div>
       <div class="field"><label>Horario Check-in</label><input type="text" id="checkinTime" placeholder="14:00"></div>
     </div>
     <div class="row2">
-      <div class="field"><label>Horario Check-out</label><input type="text" id="checkoutTime" placeholder="12:00"></div>
-      <div class="field"><label>Contraseña WiFi</label><input type="text" id="wifiPassword" placeholder="password123"></div>
+      <div class="field"><label>Horario Check-out</label><input type="text" id="checkoutTime" placeholder="11:00"></div>
+      <div class="field"><label>Contraseña WiFi</label><input type="text" id="wifiPassword" placeholder="Patagonia2026"></div>
     </div>
-    <div class="field"><label>Actividades / Servicios disponibles</label><textarea id="activities" rows="3" placeholder="Ej: Caminatas guiadas a las 9h, Spa disponible 10-20h, Traslados al aeropuerto..."></textarea></div>
+    <div class="field"><label>Actividades / Servicios disponibles</label><textarea id="activities" rows="3" placeholder="Ej: Spa disponible 14-20h, Traslados al centro..."></textarea></div>
   </div>
 
   <div class="card">
@@ -82,12 +101,11 @@ input:checked+.slider::before{transform:translateX(20px);}
   </div>
 
   <div class="card">
-    <div class="card-title">Notificaciones</div>
-    <div class="field"><label>Telegram Chat ID</label><input type="text" id="tgChat" placeholder="ID del chat"></div>
+    <div class="card-title">Notificaciones Staff</div>
     <div class="toggle-row">
       <div class="toggle-info">
-        <div class="tl">Notificar al Staff</div>
-        <div class="ts">Texto + audio en español por cada pedido</div>
+        <div class="tl">Notificar al Staff por Telegram</div>
+        <div class="ts">Envía texto + resumen en español de los pedidos de huéspedes</div>
       </div>
       <label class="toggle"><input type="checkbox" id="notifyTg" checked><span class="slider"></span></label>
     </div>
@@ -99,11 +117,23 @@ input:checked+.slider::before{transform:translateX(20px);}
     <a href="panel.html" class="nav-link">← Panel</a>
     <a href="qr_generator.html" class="nav-link">QR Generator</a>
     <a href="index.html" class="nav-link">Ver Interfaz</a>
+    <span class="nav-link" onclick="logout()" style="color:var(--gold);">Cerrar Sesión ➔</span>
   </div>
 </div>
 <div class="toast" id="toast">✓ Guardado correctamente</div>
 
 <script>
+// Verificar Sesión
+const token = localStorage.getItem('talkia_session_token');
+if (!token) {
+  window.location.href = 'login.html';
+}
+
+function logout() {
+  localStorage.removeItem('talkia_session_token');
+  window.location.href = 'login.html';
+}
+
 document.getElementById('primaryColor').addEventListener('input',function(){
   document.getElementById('primaryColorText').value=this.value;
   document.getElementById('colorPreview').style.background=this.value;
@@ -121,13 +151,21 @@ async function loadConfig(){
     const r=await fetch('/api/config'); const c=await r.json();
     document.getElementById('hotelName').value=c.hotel_name||'';
     document.getElementById('hotelInfo').value=c.hotel_info||'';
-    document.getElementById('breakfastTime').value=c.breakfast_time||'07:00 - 10:00';
+    document.getElementById('breakfastTime').value=c.breakfast_time||'07:00 - 10:30';
     document.getElementById('checkinTime').value=c.checkin_time||'14:00';
-    document.getElementById('checkoutTime').value=c.checkout_time||'12:00';
+    document.getElementById('checkoutTime').value=c.checkout_time||'11:00';
     document.getElementById('wifiPassword').value=c.wifi_password||'';
     document.getElementById('activities').value=c.activities||'';
-    document.getElementById('tgChat').value=c.tg_chat||'';
     document.getElementById('notifyTg').checked=c.notify_telegram!==false;
+    
+    // Credenciales API
+    document.getElementById('adminPass').value=c.admin_pass||'admin123';
+    document.getElementById('groqApiKey').value=c.groq_api_key||'';
+    document.getElementById('tgTokenHotel').value=c.tg_token_hotel||'';
+    document.getElementById('tgChatHotel').value=c.tg_chat_hotel||'';
+    document.getElementById('reportEmail').value=c.report_email||'';
+    document.getElementById('trialMode').checked=c.trial_mode===true;
+
     const color=c.primary_color||'#d4a843';
     document.getElementById('primaryColor').value=color;
     document.getElementById('primaryColorText').value=color;
@@ -144,13 +182,33 @@ async function saveConfig(){
     checkout_time:  document.getElementById('checkoutTime').value.trim(),
     wifi_password:  document.getElementById('wifiPassword').value.trim(),
     activities:     document.getElementById('activities').value.trim(),
-    tg_chat:        document.getElementById('tgChat').value.trim(),
     notify_telegram:document.getElementById('notifyTg').checked,
+    
+    // Credenciales API
+    admin_pass:     document.getElementById('adminPass').value.trim()||'admin123',
+    groq_api_key:   document.getElementById('groqApiKey').value.trim(),
+    tg_token_hotel: document.getElementById('tgTokenHotel').value.trim(),
+    tg_chat_hotel:  document.getElementById('tgChatHotel').value.trim(),
+    report_email:   document.getElementById('reportEmail').value.trim(),
+    trial_mode:     document.getElementById('trialMode').checked,
+
     primary_color:  document.getElementById('primaryColorText').value.trim()||document.getElementById('primaryColor').value
   };
-  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
-  const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+
+  try{
+    const r=await fetch('/api/config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(cfg)
+    });
+    if(r.ok){
+      const t=document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(()=>t.classList.remove('show'),2500);
+    }
+  }catch(e){console.error(e);}
 }
+
 loadConfig();
 </script>
 </body>

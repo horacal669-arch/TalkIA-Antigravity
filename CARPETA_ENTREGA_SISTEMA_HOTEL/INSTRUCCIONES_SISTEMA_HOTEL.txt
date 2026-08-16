@@ -1,0 +1,23 @@
+========================================================================
+       TalkIA PRO — Sistema Web Hotel & Concierge (Versión Comercial)
+========================================================================
+
+INSTRUCCIONES DE INSTALACIÓN Y USO:
+
+1. INICIAR EL SERVIDOR DEL HOTEL:
+   - Haz doble clic en "INICIAR_SISTEMA_HOTEL.bat" (o "TalkIA_Hotel_Server.exe").
+   - Aparecerá la consola indicando: "TalkIA — ONLINE".
+
+2. ACCEDER AL PANEL DE RECEPCIÓN / ADMINISTRACIÓN:
+   - Abre tu navegador web y entra a: http://localhost:5000/login.html (o http://localhost:5000/panel.html)
+   - Usuario por defecto: admin
+   - Contraseña por defecto: admin123
+
+3. CONFIGURAR LAS LLAVES DE API Y DATOS DEL HOTEL:
+   - En el panel de control, haz clic en "CONFIGURACIÓN" (http://localhost:5000/config.html).
+   - Allí puedes cambiar la Contraseña de Admin, la clave de Groq, los tokens de Telegram, el WiFi, la información del hotel y los colores.
+
+4. ACCESO PARA HUÉSPEDES (CÓDIGOS QR):
+   - Cada habitación escanea su QR ingresando a: http://localhost:5000/?room=101
+   - Genera e imprime nuevos códigos QR desde: http://localhost:5000/qr_generator.html
+========================================================================

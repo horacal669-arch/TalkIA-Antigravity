@@ -134,8 +134,11 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
     </div>
     <div class="hdr-right">
       <div class="live-dot"></div><span class="live-lbl">EN VIVO</span>
+      <a href="config.html" class="btn">⚙ Configuración</a>
+      <a href="qr_generator.html" class="btn">📱 QR Generator</a>
       <button class="btn" onclick="loadAll()">↻</button>
       <button class="btn btn-red" onclick="confirmReset()">🔄 Nuevo Turno</button>
+      <button class="btn btn-red" onclick="logout()">🔒 Salir</button>
     </div>
   </header>
 
@@ -190,8 +193,6 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   </div>
 
   <div class="nav-bar">
-    <a href="config.html" class="nav-link">⚙ Configuración</a>
-    <a href="qr_generator.html" class="nav-link">📱 QR</a>
     <a href="index.html" class="nav-link">👁 Huésped</a>
   </div>
 </div>
@@ -467,6 +468,17 @@ async function loadAll(){
       :'<div class="no-data">Sin pedidos registrados</div>';
 
   }catch(e){console.error('[PANEL ERROR]',e);}
+}
+
+// Verificar Sesión Admin
+const token = localStorage.getItem('talkia_session_token');
+if (!token) {
+  window.location.href = 'login.html';
+}
+
+function logout() {
+  localStorage.removeItem('talkia_session_token');
+  window.location.href = 'login.html';
 }
 
 loadAll();

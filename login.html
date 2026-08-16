@@ -1,147 +1,230 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TalkIA Antigravity — Login</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #0b0f1a 0%, #1a1f2e 50%, #0f1320 100%);
-  color: #e2e8f0;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.login-container {
-  width: 100%;
-  max-width: 400px;
-  padding: 20px;
-}
-.login-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 24px;
-  padding: 40px 30px;
-  backdrop-filter: blur(20px);
-  text-align: center;
-}
-.logo { font-size: 48px; margin-bottom: 16px; }
-.brand {
-  font-size: 22px;
-  font-weight: 700;
-  color: #d4a843;
-  letter-spacing: 2px;
-  margin-bottom: 6px;
-}
-.subtitle {
-  font-size: 13px;
-  color: #94a3b8;
-  margin-bottom: 32px;
-}
-.input-group { margin-bottom: 16px; text-align: left; }
-.input-label { font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
-.input-field {
-  width: 100%;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 14px 16px;
-  color: #e2e8f0;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.input-field:focus { border-color: #d4a843; }
-.btn-login {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #d4a843, #b8922e);
-  color: #0b0f1a;
-  font-size: 15px;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: all 0.2s;
-}
-.btn-login:active { transform: scale(0.97); }
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 24px 0;
-  color: #475569;
-  font-size: 12px;
-}
-.divider::before, .divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255,255,255,0.08);
-}
-.btn-panel {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  background: transparent;
-  color: #94a3b8;
-  font-size: 13px;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-panel:hover { border-color: #d4a843; color: #d4a843; }
-.error-msg {
-  color: #ef4444;
-  font-size: 12px;
-  margin-top: 8px;
-  display: none;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkIA PRO — Acceso Administrador</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --gold: #d4a843;
+            --gold-hover: #b88e32;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(212, 168, 67, 0.2);
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .brand-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 0.5px;
+        }
+
+        .brand-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--gold) 0%, #b88e32 100%);
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(212, 168, 67, 0.25);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(212, 168, 67, 0.35);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 24px;
+        }
+    </style>
 </head>
 <body>
-<div class="login-container">
-  <div class="login-card">
-    <div class="logo">🏔️</div>
-    <div class="brand">TALKIA ANTIGRAVITY</div>
-    <div class="subtitle">Hotel & Tourism AI Platform</div>
+    <div class="login-card">
+        <div class="brand-header">
+            <div class="brand-logo">🏨</div>
+            <div class="brand-title">TalkIA PRO</div>
+            <div class="brand-subtitle">Panel de Control de Recepción & Hotel</div>
+        </div>
 
-    <div class="input-group">
-      <div class="input-label">Usuario / Username</div>
-      <input type="text" class="input-field" id="username" placeholder="admin">
-    </div>
-    <div class="input-group">
-      <div class="input-label">Contraseña / Password</div>
-      <input type="password" class="input-field" id="password" placeholder="••••••••">
-    </div>
-    <div class="error-msg" id="errorMsg">Usuario o contraseña incorrectos</div>
-    <button class="btn-login" onclick="doLogin()">Iniciar Sesión / Log In</button>
+        <div id="errorMessage" class="error-message">
+            Usuario o contraseña incorrectos.
+        </div>
 
-    <div class="divider">Panel de Recepción</div>
-    <button class="btn-panel" onclick="window.location='/panel'">📊 Staff Dashboard</button>
-  </div>
-</div>
-<script>
-function doLogin() {
-  const user = document.getElementById('username').value.trim();
-  const pass = document.getElementById('password').value.trim();
-  if (user === 'admin' && pass === 'talkia2026') {
-    window.location = '/config';
-  } else if (user && pass) {
-    window.location = '/panel';
-  } else {
-    document.getElementById('errorMsg').style.display = 'block';
-  }
-}
-document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-</script>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label class="form-label" for="username">Usuario</label>
+                <input type="text" id="username" class="form-input" placeholder="admin" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Contraseña</label>
+                <input type="password" id="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn-submit" id="btnSubmit">
+                Iniciar Sesión ➔
+            </button>
+        </form>
+
+        <div class="footer-note">
+            TalkIA PRO Hotel System &copy; 2026
+        </div>
+    </div>
+
+    <script>
+        // Si ya hay un token guardado, intentamos ir al panel
+        if (localStorage.getItem('talkia_session_token')) {
+            window.location.href = 'panel.html';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const errDiv = document.getElementById('errorMessage');
+            const btn = document.getElementById('btnSubmit');
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            errDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.innerText = 'Verificando...';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    localStorage.setItem('talkia_session_token', data.token);
+                    localStorage.setItem('talkia_admin_user', username);
+                    window.location.href = 'panel.html';
+                } else {
+                    errDiv.innerText = data.error || 'Credenciales inválidas.';
+                    errDiv.style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Error al iniciar sesión:', err);
+                errDiv.innerText = 'Error de conexión con el servidor.';
+                errDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Iniciar Sesión ➔';
+            }
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,20 @@
+========================================================================
+           TalkIA PRO — Bot Traductor Personal (Versión Standalone)
+========================================================================
+
+INSTRUCCIONES DE USO PARA EL CLIENTE / RECEPCIÓNSITA:
+
+1. CONFIGURACIÓN INICIAL (Solo la primera vez):
+   - Abre el archivo "config_traductor.json" con el Bloc de Notas.
+   - Pega tu Token de Telegram en "TG_TOKEN" y tu clave de Groq en "GROQ_API_KEY".
+   - Guarda y cierra el archivo.
+
+2. INICIAR EL BOT TRADUCTOR:
+   - Haz doble clic en "TalkIA_Traductor.exe".
+   - Aparecerá una ventana negra que dice: "Bot Traductor en línea y listo para recibir audios."
+   - ¡Listo! Abre Telegram en tu teléfono o PC y empieza a hablarle al bot.
+
+3. NOTAS IMPORTANTES:
+   - No cierres la ventana de TalkIA_Traductor.exe mientras quieras que el bot esté funcionando.
+   - El bot recordará automáticamente el último idioma seleccionado con las banderas.
+========================================================================
