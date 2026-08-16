@@ -131,18 +131,19 @@ def tts(text, voice, path):
 
 # ── TRADUCCIÓN BIDIRECCIONAL INTELIGENTE (Groq Llama 3.3) ──
 def process_bidirectional_translation(client, text, guest_code):
-    guest_name = CODE_TO_LANG_NAME.get(guest_code, "English")
-    prompt = f"""You are an expert bi-directional live translator for hotel staff.
-Guest Language selected: {guest_name} ({guest_code}).
+    target_guest_name = CODE_TO_LANG_NAME.get(guest_code, "English")
+    prompt = f"""You are an expert bi-directional live translator for hotel reception staff.
+Current active target language selected by staff: {target_guest_name} ({guest_code}).
 
-Analyze the following input text:
-1. If the input text is in Spanish (or close to Spanish), translate it into {guest_name}. Set "direction": "es_to_guest".
-2. If the input text is in {guest_name} or ANY other non-Spanish language, translate it into natural fluent Spanish. Set "direction": "guest_to_es".
+Analyze the input text:
+1. Detect the ISO 2-letter language code of the input text ("es", "pt", "en", "fr", "de", "it", "ja", "zh", "ru", "ko", "he", "hi", etc.).
+2. If the input text is in Spanish ("es"), translate it into {target_guest_name} ({guest_code}). Set "direction": "es_to_guest" and "effective_guest_code": "{guest_code}".
+3. If the input text is NOT in Spanish (e.g. Portuguese "pt", German "de", French "fr", English "en", etc.), translate it into fluent Spanish. Set "direction": "guest_to_es" and "effective_guest_code": <detected ISO 2-letter code>.
 
 Input text: "{text}"
 
-Return ONLY a raw valid JSON object (no markdown, no quotes around JSON) in this exact format:
-{{"direction": "es_to_guest" | "guest_to_es", "translation": "translated text here"}}"""
+Return ONLY a raw valid JSON object without markdown or quotes around JSON in this exact format:
+{{"detected_lang_code": "iso_code", "effective_guest_code": "iso_code", "direction": "es_to_guest" | "guest_to_es", "translation": "translated text"}}"""
 
     try:
         r = client.chat.completions.create(
@@ -158,12 +159,16 @@ Return ONLY a raw valid JSON object (no markdown, no quotes around JSON) in this
         m = re.search(r'\{.*\}', content, re.DOTALL)
         if m:
             data = json.loads(m.group())
-            return data.get("direction", "es_to_guest"), data.get("translation", text)
+            eff_code = data.get("effective_guest_code", guest_code).lower()
+            # Validar que el código esté en nuestro diccionario
+            if eff_code not in CODE_TO_LANG_NAME:
+                eff_code = guest_code
+            return data.get("direction", "es_to_guest"), data.get("translation", text), eff_code
         else:
-            return "es_to_guest", content
+            return "es_to_guest", content, guest_code
     except Exception as e:
         log.error(f"Error en llamada a Groq Llama 3.3: {e}")
-        return "es_to_guest", text
+        return "es_to_guest", text, guest_code
 
 # ── TRANSCRIPCIÓN AUDIO CON WHISPER ────────────────────────
 def transcribe_audio(client, audio_bytes):
@@ -315,18 +320,23 @@ def start_bot():
                         bot.edit_message_text("⚠️ No se pudo entender el audio. Por favor intentá hablar de nuevo.", chat_id, status_msg.message_id)
                         return
 
-                    direction, translation = process_bidirectional_translation(client, original_text, guest_code)
+                    direction, translation, eff_code = process_bidirectional_translation(client, original_text, guest_code)
                     
-                    flag_icon = LANG_FLAGS.get(guest_code, "🌍")
+                    # Si habló el huésped en su idioma, fijamos su idioma detectado para las siguientes respuestas
+                    if direction == "guest_to_es":
+                        user_targets[chat_id] = eff_code
+                        save_user_targets(user_targets)
+
+                    flag_icon = LANG_FLAGS.get(eff_code, "🌍")
                     
                     if direction == "es_to_guest":
-                        voice_key = VOICES.get(guest_code, VOICES["en"])
-                        header = f"🚀 *Vos (Español) ➔ {flag_icon} {guest_code.upper()}*"
-                        header_plain = f"🚀 Vos (Español) ➔ {flag_icon} {guest_code.upper()}"
+                        voice_key = VOICES.get(eff_code, VOICES["en"])
+                        header = f"🚀 *Vos (Español) ➔ {flag_icon} {eff_code.upper()}*"
+                        header_plain = f"🚀 Vos (Español) ➔ {flag_icon} {eff_code.upper()}"
                     else:
                         voice_key = VOICES["es"]
-                        header = f"🌍 *Huésped ({flag_icon} {guest_code.upper()}) ➔ 🇦🇷 ESPAÑOL*"
-                        header_plain = f"🌍 Huésped ({flag_icon} {guest_code.upper()}) ➔ 🇦🇷 ESPAÑOL"
+                        header = f"🌍 *Huésped ({flag_icon} {eff_code.upper()}) ➔ 🇦🇷 ESPAÑOL*"
+                        header_plain = f"🌍 Huésped ({flag_icon} {eff_code.upper()}) ➔ 🇦🇷 ESPAÑOL"
 
                     response_markdown = f"{header}\n\n_{original_text}_\n\n🗣️ *{translation}*"
                     response_plain = f"{header_plain}\n\n{original_text}\n\n🗣️ {translation}"
@@ -379,15 +389,20 @@ def start_bot():
                 tmp_out = os.path.join(os.environ.get("TEMP", get_base_dir()), f"out_{uuid.uuid4().hex[:8]}.mp3")
                 
                 try:
-                    direction, translation = process_bidirectional_translation(client, msg.text, guest_code)
-                    flag_icon = LANG_FLAGS.get(guest_code, "🌍")
+                    direction, translation, eff_code = process_bidirectional_translation(client, msg.text, guest_code)
+                    
+                    if direction == "guest_to_es":
+                        user_targets[chat_id] = eff_code
+                        save_user_targets(user_targets)
+
+                    flag_icon = LANG_FLAGS.get(eff_code, "🌍")
                     
                     if direction == "es_to_guest":
-                        voice_key = VOICES.get(guest_code, VOICES["en"])
-                        header = f"💬 *Vos (Español) ➔ {flag_icon} {guest_code.upper()}*"
+                        voice_key = VOICES.get(eff_code, VOICES["en"])
+                        header = f"💬 *Vos (Español) ➔ {flag_icon} {eff_code.upper()}*"
                     else:
                         voice_key = VOICES["es"]
-                        header = f"💬 *Huésped ({flag_icon} {guest_code.upper()}) ➔ 🇦🇷 ESPAÑOL*"
+                        header = f"💬 *Huésped ({flag_icon} {eff_code.upper()}) ➔ 🇦🇷 ESPAÑOL*"
 
                     bot.send_message(
                         chat_id,

@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TalkIA — QR Generator</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Tenor+Sans&display=swap" rel="stylesheet">
+<title>TalkIA — QR Generator & Impresión de Tarjetas</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Tenor+Sans&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#d4a843;--gold2:#f0cc70;--gold-dim:rgba(212,168,67,0.1);--border:rgba(212,168,67,0.2);--text:#f5eedc;--text-dim:rgba(245,238,220,0.45);--surface:rgba(255,255,255,0.04);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#03060f;color:var(--text);font-family:'Tenor Sans',sans-serif;min-height:100vh;padding:24px 16px;display:flex;justify-content:center;}
 .sky{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 120% 55% at 50% 100%,#0a1628 0%,transparent 70%);}
-.wrap{position:relative;z-index:10;width:100%;max-width:560px;}
+.wrap{position:relative;z-index:10;width:100%;max-width:640px;}
 header{text-align:center;margin-bottom:24px;}
 .logo{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:2rem;letter-spacing:0.25em;color:var(--gold2);}
 .sub{font-size:0.55rem;letter-spacing:0.35em;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
@@ -24,13 +24,15 @@ header{text-align:center;margin-bottom:24px;}
 .field input::placeholder{color:var(--text-dim);}
 .range-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .gen-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:12px;color:#03060f;font-family:'Tenor Sans',sans-serif;font-size:0.8rem;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;margin-top:4px;}
-.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-top:4px;}
+.print-all-btn{width:100%;padding:12px;background:rgba(212,168,67,0.15);border:1px solid var(--gold);border-radius:12px;color:var(--gold2);font-family:'Tenor Sans',sans-serif;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;margin-top:12px;transition:all 0.3s;}
+.print-all-btn:hover{background:rgba(212,168,67,0.25);}
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;margin-top:12px;}
 .qr-item{background:rgba(10,18,35,0.8);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;}
 .qr-item img{width:130px;height:130px;border-radius:8px;background:#fff;padding:5px;}
-.qr-room{font-family:'Cormorant Garamond',serif;font-size:0.95rem;color:var(--gold);letter-spacing:0.15em;}
+.qr-room{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold);letter-spacing:0.15em;}
 .qr-url{font-size:0.52rem;color:var(--text-dim);word-break:break-all;line-height:1.4;}
-.print-btn{font-size:0.55rem;color:var(--text-dim);border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;background:transparent;transition:all 0.2s;}
-.print-btn:hover{border-color:var(--gold);color:var(--gold);}
+.print-btn{font-size:0.58rem;color:var(--gold);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;background:rgba(212,168,67,0.08);transition:all 0.2s;}
+.print-btn:hover{border-color:var(--gold);background:rgba(212,168,67,0.2);}
 .nav-bar{display:flex;justify-content:center;gap:16px;margin-top:20px;}
 .nav-link{color:var(--text-dim);font-size:0.58rem;letter-spacing:0.15em;text-decoration:none;text-transform:uppercase;transition:color 0.2s;}
 .nav-link:hover{color:var(--gold);}
@@ -41,30 +43,31 @@ header{text-align:center;margin-bottom:24px;}
 <div class="wrap">
   <header>
     <div class="logo">TalkIA</div>
-    <div class="sub">Generador de QR por Habitación</div>
+    <div class="sub">Generador de Tarjetas QR para Habitaciones</div>
   </header>
 
   <div class="card">
-    <div class="card-title">URL del Servidor</div>
+    <div class="card-title">URL del Servidor del Hotel</div>
     <div class="url-badge" id="urlBadge">Detectando URL...</div>
     <div class="field">
-      <label>Cambiar URL (opcional)</label>
-      <input type="text" id="customUrl" placeholder="https://tu-url.railway.app">
+      <label>Cambiar URL (si usás dominio o túnel 4G)</label>
+      <input type="text" id="customUrl" placeholder="https://tu-hotel.com">
     </div>
   </div>
 
   <div class="card">
     <div class="card-title">Generar QR por Habitaciones</div>
     <div class="range-row">
-      <div class="field"><label>Desde</label><input type="number" id="roomFrom" value="101" min="1"></div>
-      <div class="field"><label>Hasta</label><input type="number" id="roomTo" value="110" min="1"></div>
+      <div class="field"><label>Desde Habitación</label><input type="number" id="roomFrom" value="101" min="1"></div>
+      <div class="field"><label>Hasta Habitación</label><input type="number" id="roomTo" value="110" min="1"></div>
     </div>
-    <button class="gen-btn" onclick="generateAll()">Generar QR para todas las habitaciones</button>
+    <button class="gen-btn" onclick="generateAll()">Generar Código QR para Habitaciones</button>
   </div>
 
   <div id="qrOutput" style="display:none;">
     <div class="card">
       <div class="card-title" id="qrCount"></div>
+      <button class="print-all-btn" onclick="printAllQRs()">🖨️ Imprimir Todas las Tarjetas de Habitación (Lote Completo)</button>
       <div class="qr-grid" id="qrGrid"></div>
     </div>
   </div>
@@ -89,6 +92,8 @@ function getBase(){
   return document.getElementById('customUrl').value.trim() || autoUrl;
 }
 
+let currentRooms = [];
+
 function generateAll(){
   const from=parseInt(document.getElementById('roomFrom').value)||101;
   const to=parseInt(document.getElementById('roomTo').value)||110;
@@ -96,12 +101,16 @@ function generateAll(){
   const base=getBase();
   const grid=document.getElementById('qrGrid');
   grid.innerHTML='';
+  currentRooms = [];
+  
   for(let r=from;r<=to;r++){
     const url=`${base}/index.html?room=${r}`;
-    const qrSrc=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=050505&margin=8`;
+    const qrSrc=`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=050505&margin=8`;
+    currentRooms.push({ room: r, url: url, qrSrc: qrSrc });
+    
     const item=document.createElement('div');
     item.className='qr-item';
-    item.innerHTML=`<div class="qr-room">HAB. ${r}</div><img src="${qrSrc}" alt="QR ${r}"><div class="qr-url">${url}</div><button class="print-btn" onclick="printQR(${r},'${url}')">⬇ Imprimir</button>`;
+    item.innerHTML=`<div class="qr-room">HAB. ${r}</div><img src="${qrSrc}" alt="QR ${r}"><div class="qr-url">${url}</div><button class="print-btn" onclick="printQR(${r},'${url}')">🖨️ Imprimir Tarjeta</button>`;
     grid.appendChild(item);
   }
   document.getElementById('qrCount').textContent=`${to-from+1} QR generados — Habitaciones ${from} a ${to}`;
@@ -111,7 +120,53 @@ function generateAll(){
 function printQR(room,url){
   const qrSrc=`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=050505&margin=10`;
   const w=window.open('','_blank');
-  w.document.write(`<html><head><title>QR Hab. ${room}</title><style>body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:serif;background:#fff;}img{width:260px;height:260px;}h2{font-size:1.1rem;letter-spacing:0.3em;text-transform:uppercase;margin:16px 0 6px;}p{font-size:0.6rem;color:#888;letter-spacing:0.2em;text-align:center;}</style></head><body><h2>Habitación ${room}</h2><img src="${qrSrc}"><p>TalkIA · Concierge · Escaneá para asistencia</p><script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  w.document.write(`<html><head><title>Tarjeta QR Habitación ${room}</title><style>
+    body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:'Cormorant Garamond',serif;background:#fff;color:#000;}
+    .card-border{border:3px solid #d4a843;padding:32px;border-radius:16px;text-align:center;max-width:340px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+    h1{font-size:1.8rem;letter-spacing:0.25em;color:#000;margin:0 0 4px;}
+    h2{font-size:1.4rem;letter-spacing:0.2em;color:#d4a843;margin:0 0 16px;}
+    img{width:220px;height:220px;margin-bottom:16px;}
+    p{font-family:sans-serif;font-size:0.75rem;color:#444;line-height:1.4;margin:0;}
+  </style></head><body>
+    <div class="card-border">
+      <h1>TALKIA PRO</h1>
+      <h2>HABITACIÓN ${room}</h2>
+      <img src="${qrSrc}">
+      <p><b>Escaneá este código QR</b> con la cámara de tu celular para acceder a Servicios a la Habitación, Menú, WiFi y Concierge 24/7 en tu idioma.</p>
+    </div>
+    <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+function printAllQRs(){
+  if(!currentRooms.length) return;
+  const w=window.open('','_blank');
+  
+  let cardsHtml = currentRooms.map(item => `
+    <div class="card-border">
+      <h1>TALKIA PRO</h1>
+      <h2>HABITACIÓN ${item.room}</h2>
+      <img src="${item.qrSrc}">
+      <p><b>Escaneá este código QR</b> con la cámara de tu celular para acceder a Servicios a la Habitación, Menú, WiFi y Concierge 24/7 en tu idioma.</p>
+    </div>
+  `).join('');
+
+  w.document.write(`<html><head><title>Impresión Lote de Tarjetas QR</title><style>
+    body{margin:0;padding:20px;font-family:'Cormorant Garamond',serif;background:#fff;color:#000;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+    .card-border{border:2px solid #d4a843;padding:20px;border-radius:12px;text-align:center;box-sizing:border-box;page-break-inside:avoid;}
+    h1{font-size:1.5rem;letter-spacing:0.25em;color:#000;margin:0 0 4px;}
+    h2{font-size:1.2rem;letter-spacing:0.2em;color:#d4a843;margin:0 0 12px;}
+    img{width:170px;height:170px;margin-bottom:12px;}
+    p{font-family:sans-serif;font-size:0.7rem;color:#444;line-height:1.3;margin:0;}
+    @media print{
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+    }
+  </style></head><body>
+    <div class="grid">${cardsHtml}</div>
+    <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
   w.document.close();
 }
 </script>
