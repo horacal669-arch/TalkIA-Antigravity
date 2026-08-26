@@ -3,13 +3,29 @@ import sys
 import time
 import json
 import logging
+from utils import retry_on_exception
+
 import threading
 import asyncio
 import uuid
 import re
-import telebot
-import edge_tts
-from groq import Groq
+
+# Robust imports with graceful fallback
+try:
+    import telebot
+except ImportError as e:
+    raise ImportError("Missing dependency 'pyTelegramBotAPI'. Install via 'pip install pyTelegramBotAPI'.") from e
+
+try:
+    import edge_tts
+except ImportError as e:
+    raise ImportError("Missing dependency 'edge-tts'. Install via 'pip install edge-tts'.") from e
+
+try:
+    from groq import Groq
+except ImportError as e:
+    raise ImportError("Missing dependency 'groq'. Install via 'pip install groq'.") from e
+
 
 # ── RUTA BASE PARA PYINSTALLER O SCRIPT NORMAL ────────────
 def get_base_dir():
@@ -22,19 +38,30 @@ CONFIG_FILE = os.path.join(BASE_DIR, "config_traductor.json")
 TARGETS_FILE = os.path.join(BASE_DIR, "user_target.json")
 
 # ── LOGGING ──────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+# Configure logger with rotating file handler
 log = logging.getLogger("bot_traductor")
+log.setLevel(logging.INFO)
+
+# Console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+log.addHandler(console_handler)
+
+# File handler (rotates at 5MB, keep 5 backups)
+file_handler = logging.handlers.RotatingFileHandler(
+    os.path.join(os.path.dirname(__file__), "logs", "bot_traductor.log"),
+    maxBytes=5 * 1024 * 1024,
+    backupCount=5,
+    encoding="utf-8",
+)
+file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+log.addHandler(file_handler)
+
 
 # ── CARGA Y MANEJO DE CONFIGURACIÓN ───────────────────────
 DEFAULT_CONFIG = {
-    "TG_TOKEN": "8401365409:AAFLenDqSSR-SYfSfZFD6967zeTLgAzfMkw",
-    "GROQ_API_KEY": "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",
+    "TG_TOKEN": os.getenv('TG_TOKEN', "8401365409:AAFLenDqSSR-SYfSfZFD6967zeTLgAzfMkw"),
+    "GROQ_API_KEY": os.getenv('GROQ_API_KEY', "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"),
     "ADMIN_IDS": [],
     "TRIAL_MODE": False,
     "MAX_TRIAL_TRANSLATIONS": 50,
@@ -130,6 +157,7 @@ def tts(text, voice, path):
         loop.close()
 
 # ── TRADUCCIÓN BIDIRECCIONAL INTELIGENTE (Groq Llama 3.3) ──
+@retry_on_exception(max_retries=5, backoff_factor=1)
 def process_bidirectional_translation(client, text, guest_code):
     target_guest_name = CODE_TO_LANG_NAME.get(guest_code, "English")
     prompt = f"""You are an expert bi-directional live translator for hotel reception staff.
@@ -171,6 +199,7 @@ Return ONLY a raw valid JSON object without markdown or quotes around JSON in th
         return "es_to_guest", text, guest_code
 
 # ── TRANSCRIPCIÓN AUDIO CON WHISPER ────────────────────────
+@retry_on_exception(max_retries=5, backoff_factor=1)
 def transcribe_audio(client, audio_bytes):
     tmp_folder = os.path.join(os.environ.get("TEMP", get_base_dir()), "talkia_tmp")
     os.makedirs(tmp_folder, exist_ok=True)

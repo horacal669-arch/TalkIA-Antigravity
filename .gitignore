@@ -1,7 +1,14 @@
 build/
+dist/
 __pycache__/
 *.pyc
 *.mp3
 *.ogg
+*.mp4
+*.spec
 responses/
 reports/
+logs/
+.venv/
+ngrok.exe
+*.exe
