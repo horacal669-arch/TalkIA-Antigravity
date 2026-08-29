@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import logging
+import logging.handlers
 from utils import retry_on_exception
 
 import threading
@@ -31,9 +32,13 @@ except ImportError as e:
 def get_base_dir():
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
+    return os.path.dirname(os.path.abspath(__FILE__))
 
 BASE_DIR = get_base_dir()
+# Ensure logs directory exists
+logs_path = os.path.join(BASE_DIR, "logs")
+os.makedirs(logs_path, exist_ok=True)
+
 CONFIG_FILE = os.path.join(BASE_DIR, "config_traductor.json")
 TARGETS_FILE = os.path.join(BASE_DIR, "user_target.json")
 
@@ -49,7 +54,7 @@ log.addHandler(console_handler)
 
 # File handler (rotates at 5MB, keep 5 backups)
 file_handler = logging.handlers.RotatingFileHandler(
-    os.path.join(os.path.dirname(__file__), "logs", "bot_traductor.log"),
+    os.path.join(logs_path, "bot_traductor.log"),
     maxBytes=5 * 1024 * 1024,
     backupCount=5,
     encoding="utf-8",
