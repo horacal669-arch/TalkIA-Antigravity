@@ -10,6 +10,8 @@ import threading
 import asyncio
 import uuid
 import re
+import csv
+from datetime import datetime
 
 # Robust imports with graceful fallback
 try:
@@ -32,7 +34,7 @@ except ImportError as e:
 def get_base_dir():
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__FILE__))
+    return os.path.dirname(os.path.abspath(__file__))
 
 BASE_DIR = get_base_dir()
 # Ensure logs directory exists
@@ -41,6 +43,8 @@ os.makedirs(logs_path, exist_ok=True)
 
 CONFIG_FILE = os.path.join(BASE_DIR, "config_traductor.json")
 TARGETS_FILE = os.path.join(BASE_DIR, "user_target.json")
+GENDERS_FILE = os.path.join(BASE_DIR, "user_genders.json")
+HISTORIAL_FILE = os.path.join(BASE_DIR, "historial_traducciones.csv")
 
 # ── LOGGING ──────────────────────────────────────────────
 # Configure logger with rotating file handler
@@ -110,10 +114,39 @@ def save_user_targets(targets):
     except Exception as e:
         log.error(f"Error al guardar user_target.json: {e}")
 
+def load_user_genders():
+    if os.path.exists(GENDERS_FILE):
+        try:
+            with open(GENDERS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return {int(k): v for k, v in data.items()}
+        except Exception as e:
+            log.error(f"Error al leer user_genders.json: {e}")
+    return {}
+
+def save_user_genders(genders):
+    try:
+        with open(GENDERS_FILE, "w", encoding="utf-8") as f:
+            json.dump({str(k): v for k, v in genders.items()}, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        log.error(f"Error al guardar user_genders.json: {e}")
+
+def log_translation(chat_id, direction, original, translation, eff_code, gender):
+    file_exists = os.path.exists(HISTORIAL_FILE)
+    try:
+        with open(HISTORIAL_FILE, "a", newline='', encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Fecha", "Chat ID", "Direccion", "Idioma Huésped", "Voz", "Texto Original", "Traduccion"])
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            writer.writerow([now, chat_id, direction, eff_code, gender, original, translation])
+    except Exception as e:
+        log.error(f"Error guardando historial: {e}")
+
 # ── VOCES Y TABLAS DE IDIOMAS ─────────────────────────────
-VOICES = {
-    "es": "es-AR-TomasNeural",
-    "en": "en-US-ChristopherNeural",
+VOICES_MALE = {
+    "es": "es-ES-AlvaroNeural",
+    "en": "en-US-GuyNeural",
     "ja": "ja-JP-KeitaNeural",
     "ru": "ru-RU-DmitryNeural",
     "zh": "zh-CN-YunxiNeural",
@@ -124,6 +157,21 @@ VOICES = {
     "ko": "ko-KR-InJoonNeural",
     "he": "he-IL-AvriNeural",
     "hi": "hi-IN-MadhurNeural"
+}
+
+VOICES_FEMALE = {
+    "es": "es-ES-ElviraNeural",
+    "en": "en-US-AriaNeural",
+    "ja": "ja-JP-NanamiNeural",
+    "ru": "ru-RU-SvetlanaNeural",
+    "zh": "zh-CN-XiaoxiaoNeural",
+    "de": "de-DE-KatjaNeural",
+    "it": "it-IT-ElsaNeural",
+    "fr": "fr-FR-DeniseNeural",
+    "pt": "pt-BR-FranciscaNeural",
+    "ko": "ko-KR-SunHiNeural",
+    "he": "he-IL-HilaNeural",
+    "hi": "hi-IN-SwaraNeural"
 }
 
 CODE_TO_LANG_NAME = {
@@ -161,9 +209,36 @@ def tts(text, voice, path):
     finally:
         loop.close()
 
+# ── AUTO-DESCUBRIMIENTO DE MODELOS GROQ ───────────────────
+AVAILABLE_MODELS = {"text": "qwen/qwen3.8-27b", "audio": "whisper-large-v3", "last_update": 0}
+
+def get_active_models(client):
+    try:
+        # Actualiza la lista maximo una vez por hora
+        if time.time() - AVAILABLE_MODELS.get("last_update", 0) > 3600:
+            models_data = client.models.list().data
+            active_ids = [m.id for m in models_data]
+            
+            # Busca modelos de texto activos segun preferencia
+            for pref in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama3-8b-8192", "mixtral-8x7b-32768", "qwen/qwen3.8-27b", "gemma-7b-it"]:
+                if pref in active_ids:
+                    AVAILABLE_MODELS["text"] = pref
+                    break
+                    
+            # Busca modelos de audio activos segun preferencia
+            for pref in ["whisper-large-v3-turbo", "whisper-large-v3", "distil-whisper-large-v3-en"]:
+                if pref in active_ids:
+                    AVAILABLE_MODELS["audio"] = pref
+                    break
+            AVAILABLE_MODELS["last_update"] = time.time()
+    except Exception as e:
+        log.error(f"Error buscando modelos: {e}")
+    return AVAILABLE_MODELS["text"], AVAILABLE_MODELS["audio"]
+
 # ── TRADUCCIÓN BIDIRECCIONAL INTELIGENTE (Groq Llama 3.3) ──
 @retry_on_exception(max_retries=5, backoff_factor=1)
 def process_bidirectional_translation(client, text, guest_code):
+    text_model, _ = get_active_models(client)
     target_guest_name = CODE_TO_LANG_NAME.get(guest_code, "English")
     prompt = f"""You are an expert bi-directional live translator for hotel reception staff.
 Current active target language selected by staff: {target_guest_name} ({guest_code}).
@@ -180,7 +255,7 @@ Return ONLY a raw valid JSON object without markdown or quotes around JSON in th
 
     try:
         r = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=text_model,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=600,
             temperature=0.1
@@ -200,12 +275,15 @@ Return ONLY a raw valid JSON object without markdown or quotes around JSON in th
         else:
             return "es_to_guest", content, guest_code
     except Exception as e:
-        log.error(f"Error en llamada a Groq Llama 3.3: {e}")
+        log.error(f"Error en llamada a Groq: {e}")
+        # Fallback: return the original text without translation
+        # Keep the direction as if it were a Spanish‑to‑guest translation
         return "es_to_guest", text, guest_code
 
 # ── TRANSCRIPCIÓN AUDIO CON WHISPER ────────────────────────
 @retry_on_exception(max_retries=5, backoff_factor=1)
 def transcribe_audio(client, audio_bytes):
+    _, audio_model = get_active_models(client)
     tmp_folder = os.path.join(os.environ.get("TEMP", get_base_dir()), "talkia_tmp")
     os.makedirs(tmp_folder, exist_ok=True)
     tmp_file = os.path.join(tmp_folder, f"tr_{uuid.uuid4().hex[:8]}.ogg")
@@ -217,7 +295,7 @@ def transcribe_audio(client, audio_bytes):
         with open(tmp_file, "rb") as f:
             r = client.audio.transcriptions.create(
                 file=("audio.ogg", f, "audio/ogg"),
-                model="whisper-large-v3-turbo",
+                model=audio_model,
                 response_format="json"
             )
         return r.text.strip() if hasattr(r, 'text') else str(r).strip()
@@ -232,10 +310,12 @@ def transcribe_audio(client, audio_bytes):
 # ── TECLADO TELEGRAM ──────────────────────────────────────
 def build_keyboard():
     m = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    m.row(telebot.types.KeyboardButton("👨 Voz: Hombre"), telebot.types.KeyboardButton("👩 Voz: Mujer"))
     m.row(telebot.types.KeyboardButton("🇺🇸 EN"), telebot.types.KeyboardButton("🇫🇷 FR"), telebot.types.KeyboardButton("🇧🇷 PT"))
     m.row(telebot.types.KeyboardButton("🇯🇵 JA"), telebot.types.KeyboardButton("🇷🇺 RU"), telebot.types.KeyboardButton("🇩🇪 DE"))
     m.row(telebot.types.KeyboardButton("🇮🇱 HE"), telebot.types.KeyboardButton("🇮🇳 HI"), telebot.types.KeyboardButton("🇨🇳 ZH"))
     m.row(telebot.types.KeyboardButton("🇮🇹 IT"), telebot.types.KeyboardButton("🇰🇷 KO"))
+    m.row(telebot.types.KeyboardButton("🧹 Limpiar Chat"), telebot.types.KeyboardButton("⚙️ API y Modelos"))
     return m
 
 # ── CONTROL DE MODO TRIAL (PRUEBA GRATUITA) ───────────────
@@ -260,6 +340,7 @@ def check_and_update_trial(config, chat_id):
 def start_bot():
     cfg = load_config()
     user_targets = load_user_targets()
+    user_genders = load_user_genders()
     
     log.info("==================================================")
     log.info(" TalkIA PRO — Bot Traductor Personal Standalone")
@@ -294,12 +375,40 @@ def start_bot():
                         "• Hablás en *español* ➔ Traduzco al idioma del huésped con voz.\n"
                         "• El huésped habla o escribe ➔ Traduzco al *español* con voz.\n\n"
                         f"Idioma actual del huésped: {flag_icon} *{curr_code.upper()}*\n\n"
-                        "👇 *Seleccioná el idioma del huésped con las banderitas:*"+trial_txt,
+                        "👇 *Seleccioná el idioma del huésped con las banderitas:*" + trial_txt + "\n\n💡 _Podés enviar /historial para descargar tus traducciones._",
                         parse_mode="Markdown",
                         reply_markup=build_keyboard()
                     )
                 except Exception as e:
                     log.error(f"Error en /start: {e}")
+
+            @bot.message_handler(commands=["historial"])
+            def handle_historial(msg):
+                chat_id = msg.chat.id
+                if os.path.exists(HISTORIAL_FILE):
+                    try:
+                        with open(HISTORIAL_FILE, "rb") as f:
+                            bot.send_document(chat_id, f, caption="📊 Aquí tienes el registro de tus traducciones en formato Excel/CSV.")
+                    except Exception as e:
+                        bot.send_message(chat_id, f"Error al enviar historial: {e}")
+                else:
+                    bot.send_message(chat_id, "No hay traducciones registradas aún.")
+
+            @bot.message_handler(func=lambda m: m.text == "🧹 Limpiar Chat")
+            def handle_limpiar(msg):
+                chat_id = msg.chat.id
+                temp_msg = bot.send_message(chat_id, "🧹 Borrando mensajes recientes...")
+                
+                def delete_background():
+                    # Borra hasta 100 mensajes hacia atras
+                    for i in range(temp_msg.message_id, max(0, temp_msg.message_id - 100), -1):
+                        try:
+                            bot.delete_message(chat_id, i)
+                        except:
+                            pass
+                    bot.send_message(chat_id, "✅ Chat limpio.\n\n_Telegram permite a los bots borrar mensajes recientes de hasta 48hs. (Para ver los guardados, usa /historial)_", parse_mode="Markdown")
+
+                threading.Thread(target=delete_background, daemon=True).start()
 
             @bot.message_handler(func=lambda m: m.text and any(flag in m.text for flag in FLAG_MAP))
             def handle_flag_selection(msg):
@@ -318,6 +427,20 @@ def start_bot():
                             return
                 except Exception as e:
                     log.error(f"Error en selección de bandera: {e}")
+
+            @bot.message_handler(func=lambda m: m.text in ["👨 Voz: Hombre", "👩 Voz: Mujer"])
+            def handle_gender_selection(msg):
+                try:
+                    chat_id = msg.chat.id
+                    if "Hombre" in msg.text:
+                        user_genders[chat_id] = "male"
+                        bot.send_message(chat_id, "✅ *Voz configurada:* 👨 Hombre\n\nEl bot responderá con voz masculina.", parse_mode="Markdown")
+                    else:
+                        user_genders[chat_id] = "female"
+                        bot.send_message(chat_id, "✅ *Voz configurada:* 👩 Mujer\n\nEl bot responderá con voz femenina.", parse_mode="Markdown")
+                    save_user_genders(user_genders)
+                except Exception as e:
+                    log.error(f"Error en selección de género: {e}")
 
             @bot.message_handler(content_types=["voice", "audio"])
             def handle_voice_message(msg):
@@ -363,12 +486,13 @@ def start_bot():
 
                     flag_icon = LANG_FLAGS.get(eff_code, "🌍")
                     
+                    v_dict = VOICES_MALE if user_genders.get(chat_id, "male") == "male" else VOICES_FEMALE
                     if direction == "es_to_guest":
-                        voice_key = VOICES.get(eff_code, VOICES["en"])
+                        voice_key = v_dict.get(eff_code, v_dict["en"])
                         header = f"🚀 *Vos (Español) ➔ {flag_icon} {eff_code.upper()}*"
                         header_plain = f"🚀 Vos (Español) ➔ {flag_icon} {eff_code.upper()}"
                     else:
-                        voice_key = VOICES["es"]
+                        voice_key = v_dict["es"]
                         header = f"🌍 *Huésped ({flag_icon} {eff_code.upper()}) ➔ 🇦🇷 ESPAÑOL*"
                         header_plain = f"🌍 Huésped ({flag_icon} {eff_code.upper()}) ➔ 🇦🇷 ESPAÑOL"
 
@@ -382,6 +506,9 @@ def start_bot():
                         bot.send_message(chat_id, response_markdown, parse_mode="Markdown")
                     except:
                         bot.send_message(chat_id, response_plain)
+
+                    # Guardar en historial
+                    log_translation(chat_id, direction, original_text, translation, eff_code, user_genders.get(chat_id, "male"))
 
                     def send_voice_async():
                         try:
@@ -403,6 +530,44 @@ def start_bot():
                     if status_msg:
                         try: bot.edit_message_text(f"❌ Error al traducir: {err}", chat_id, status_msg.message_id)
                         except: bot.send_message(chat_id, f"❌ Error al traducir: {err}")
+
+            WAITING_FOR_API = {}
+
+            @bot.message_handler(func=lambda m: m.text == "⚙️ API y Modelos")
+            def handle_config(msg):
+                chat_id = msg.chat.id
+                txt_mod, aud_mod = get_active_models(client)
+                bot.send_message(
+                    chat_id, 
+                    f"🤖 *Estado del Sistema Automático*\n\n"
+                    f"✅ *Modelo Texto:* `{txt_mod}`\n"
+                    f"✅ *Modelo Audio:* `{aud_mod}`\n\n"
+                    "_(El sistema descubre y usa automáticamente los mejores modelos activos sin que tengas que programar nada)_\n\n"
+                    "🔑 *¿Deseas cambiar tu API Key de Groq?*\n"
+                    "Escribe tu nueva clave a continuación, o toca /cancelar para salir.",
+                    parse_mode="Markdown"
+                )
+                WAITING_FOR_API[chat_id] = True
+                
+            @bot.message_handler(commands=['cancelar'])
+            def handle_cancel_api(msg):
+                if WAITING_FOR_API.get(msg.chat.id):
+                    WAITING_FOR_API[msg.chat.id] = False
+                    bot.send_message(msg.chat.id, "❌ Operación cancelada.")
+
+            @bot.message_handler(func=lambda m: WAITING_FOR_API.get(m.chat.id, False) and not m.text.startswith("/"))
+            def handle_new_api_key(msg):
+                chat_id = msg.chat.id
+                new_key = msg.text.strip()
+                if new_key.startswith("gsk_"):
+                    cfg["GROQ_API_KEY"] = new_key
+                    save_config(cfg)
+                    client.api_key = new_key
+                    AVAILABLE_MODELS["last_update"] = 0 # Forzar reseteo de busqueda de modelos
+                    bot.send_message(chat_id, "✅ ¡API Key guardada exitosamente y modelos actualizados!")
+                    WAITING_FOR_API[chat_id] = False
+                else:
+                    bot.send_message(chat_id, "❌ La clave debe empezar con 'gsk_'. Intenta de nuevo o envía /cancelar.")
 
             @bot.message_handler(func=lambda m: m.text and not m.text.startswith("/"))
             def handle_text_message(msg):
@@ -431,11 +596,12 @@ def start_bot():
 
                     flag_icon = LANG_FLAGS.get(eff_code, "🌍")
                     
+                    v_dict = VOICES_MALE if user_genders.get(chat_id, "male") == "male" else VOICES_FEMALE
                     if direction == "es_to_guest":
-                        voice_key = VOICES.get(eff_code, VOICES["en"])
+                        voice_key = v_dict.get(eff_code, v_dict["en"])
                         header = f"💬 *Vos (Español) ➔ {flag_icon} {eff_code.upper()}*"
                     else:
-                        voice_key = VOICES["es"]
+                        voice_key = v_dict["es"]
                         header = f"💬 *Huésped ({flag_icon} {eff_code.upper()}) ➔ 🇦🇷 ESPAÑOL*"
 
                     bot.send_message(
@@ -443,6 +609,9 @@ def start_bot():
                         f"{header}\n\n*{translation}*",
                         parse_mode="Markdown"
                     )
+                    
+                    # Guardar en historial
+                    log_translation(chat_id, direction, msg.text, translation, eff_code, user_genders.get(chat_id, "male"))
                     
                     def send_voice_async():
                         try:
